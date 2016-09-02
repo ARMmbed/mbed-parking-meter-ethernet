@@ -31,8 +31,7 @@ static void *__instance = NULL;
 extern "C" void _decrementor(const void *args);
 
 // Linkage to LCD Resource (for writing updates)
-extern "C" void clear_lcd();
-extern "C" void write_to_lcd(char *buffer);
+extern "C" void update_parking_meter_stats(int value, int fill_value);
 
 // Hour Glass
 static int __fill_seconds = 0;      // current "fill" state to countdown to...
@@ -64,8 +63,8 @@ public:
         // no Thread yet
         this->m_countdown_thread = NULL;
         
-        // default is EXPIRED
-        write_to_lcd("Parking Time: EXPIRED");
+        // EXPIRED
+        update_parking_meter_stats(__seconds,__fill_seconds);
     }
 
     /**
@@ -132,29 +131,24 @@ public:
     }
 };
 
-// Display of Remaining Time to Expiration
-static void note_remaining_time(int seconds) {
-    char buffer[64];
-    memset(buffer,0,64);
-    sprintf(buffer,"Parking Time: %d secs left",seconds);
-    write_to_lcd(buffer);
-}    
-
 // decrementor
 void _decrementor(const void *args) {
     HourGlassResource *me = (HourGlassResource *)__instance;
     __seconds = __fill_seconds;
     
     // Countdown...
-    while(__seconds > 0) {
-        note_remaining_time(__seconds); // Write to LCD...
-        Thread::wait(1000);             // wait 1 second
-        __seconds -= 1;                 // decrement 1 second
+    while(__seconds >= 0) {
+        update_parking_meter_stats(__seconds,__fill_seconds); // Write to LCD...
+        Thread::wait(1000);                                   // wait 1 second
+        __seconds -= 1;                                       // decrement 1 second
     }
+    
+    // we are done.. so zero out
+    __seconds = 0;
     
     // Expired!  Observe it... you will get a "0" in the observation value... 
     if (me != NULL) {
-        write_to_lcd("Parking Time: EXPIRED");
+        update_parking_meter_stats(0,__fill_seconds);
         me->observe();
         me->reset();
     }

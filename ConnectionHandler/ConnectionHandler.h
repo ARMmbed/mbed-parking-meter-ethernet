@@ -39,6 +39,12 @@
         
         // Destructor
         virtual ~ConnectionHandler();
+        
+        // begin de-registration
+        virtual void begin_object_unregistering(void *ep);
+        
+        // registered
+        virtual void object_registered(void *ep,void *security,void *data); 
  };
  
  #endif // __CONNECTION_HANDLER_H__

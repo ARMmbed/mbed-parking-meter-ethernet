@@ -32,6 +32,9 @@ DigitalOut  __switch(D0);
 // LED for confirmation
 DigitalOut  __led(LED3);
 
+// Linkage to LCD Resource (for writing updates)
+extern "C" void parking_meter_beacon_status(bool enabled);
+
 // possible switch states
 #define OFF             "0"     // Go HIGH... --> turn BLE OFF
 #define ON              "1"     // Go LOW... --> turn BLE ON
@@ -53,6 +56,7 @@ public:
         // default is ON
         __switch = 1;
         __led = 0;
+        parking_meter_beacon_status(true);
     }
 
     /**
@@ -73,10 +77,12 @@ public:
         if (value.compare(string(OFF)) == 0) {
             __switch = 0;
             __led = 1;
+            parking_meter_beacon_status(false);
         }
         else {
             __switch = 1;
             __led = 0;
+            parking_meter_beacon_status(true);
         }
     }
 };

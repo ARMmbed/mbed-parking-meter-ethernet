@@ -104,6 +104,9 @@ int main()
     // Announce
     logger.log("\r\n\r\nmbed Parking Meter (%s)",net_get_type());
     
+    // LCD Update
+    write_parking_meter_title(MY_FIRMWARE_VERSION);
+    
     // Configure Device Manager (if enabled)
     DeviceManager *device_manager = NULL;
     if (ENABLE_DEVICE_MANAGER) {
