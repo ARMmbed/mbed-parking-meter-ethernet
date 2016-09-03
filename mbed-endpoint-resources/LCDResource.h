@@ -26,9 +26,9 @@
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
 
-// String buffer for the LCD panel
-#define LCD_BUFFER_LENGTH       128
-static char __lcd_buffer[LCD_BUFFER_LENGTH+1];
+// String buffer for the LCD log line
+#define LCD_BUFFER_LENGTH       24
+static char __log[LCD_BUFFER_LENGTH+1];
 
 // number of slots in the time remaining bar
 #define NUM_SLOTS               20
@@ -64,6 +64,13 @@ extern "C" void parking_status_led_green() {
     g = 0.5;
 }
 
+// initialize the log buffer
+extern "C" void init_log_buffer() 
+{
+	 memset(__log,0,LCD_BUFFER_LENGTH+1);
+	 for(int i=0;i<LCD_BUFFER_LENGTH;++i) __log[i] = ' ';
+}
+
 // write to the status log line...
 extern "C" void parking_meter_log_status(char *status) 
 {
@@ -72,10 +79,10 @@ extern "C" void parking_meter_log_status(char *status)
         if (length > LCD_BUFFER_LENGTH) {
             length = LCD_BUFFER_LENGTH;
         }
-        memset(__lcd_buffer,0,LCD_BUFFER_LENGTH+1);
-        strncpy(__lcd_buffer,status,length);
+       init_log_buffer();
+       for(int i=0;i<length;++i) __log[i] = status[i];
         __lcd.locate(0,20);
-        __lcd.printf(status);
+        __lcd.printf(__log);
     }
 }
 
@@ -113,8 +120,8 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
     __lcd.locate(0,10);
     if (value <= 0) {
         // parking time expired
-        __lcd.printf("Time: EXPIRED             ");
-        parking_meter_log_status("Remain: NONE              ");
+        __lcd.printf("Time: EXPIRED           ");
+        parking_meter_log_status("Remain: NONE            ");
         
         // LED goes red
         parking_status_led_red();
@@ -126,7 +133,7 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
         // use the log line too... just give the stats...
         char buf[64];
         memset(buf,0,64); 
-        sprintf(buf,"Remain: %d sec of %d sec  ",value,fill_value);
+        sprintf(buf,"Remain: %d sec of %d sec",value,fill_value);
         parking_meter_log_status(buf);
         
         // if the remaining time is less than 25% of the total, color the led YELLOW
@@ -145,10 +152,10 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
 extern "C" void parking_meter_beacon_status(bool enabled) 
 {
     if (enabled == true) {
-        parking_meter_log_status("Beacon: ENABLED         ");
+        parking_meter_log_status("Beacon: ENABLED");
     }
     else {
-        parking_meter_log_status("Beacon: DISABLED        ");
+        parking_meter_log_status("Beacon: DISABLED");
     }
 }
 
@@ -166,16 +173,16 @@ public:
     @param observable input the resource is Observable (default: FALSE)
     */
     LCDResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"C12832 LCD",M2MBase::GET_PUT_ALLOWED,observable) {
-        memset(__lcd_buffer,0,LCD_BUFFER_LENGTH+1);
+       init_log_buffer();
     }
 
     /**
-    Get the value of the the LCD's text buffer
+    Get the value of the the LCD's log line text buffer
     @returns string representing the current value of this resource
     */
     virtual string get() {
-        this->logger()->log("C12832 LCD: GET() called. Buffer: %s",__lcd_buffer);
-        return string(__lcd_buffer);
+        this->logger()->log("C12832 LCD: GET() called. Log buffer: %s",__log);
+        return string(__log);
     }
     
     /**
@@ -188,4 +195,3 @@ public:
 };
 
 #endif // __LCD_RESOURCE_H__
-

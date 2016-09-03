@@ -43,9 +43,9 @@ ConnectionHandler::~ConnectionHandler() {
 
 // Beginning de-registration
 void ConnectionHandler::begin_object_unregistering(void * /* ep */) {
-    parking_meter_log_status("Meter: DEREGISTERED     ");
+    parking_meter_log_status("Meter: DEREGISTERED");
 }
 
 void ConnectionHandler::object_registered(void * /* ep */,void * /* security */,void * /*data */) {
-    parking_meter_log_status("Meter: ONLINE/REGISTERED");
+    parking_meter_log_status("Meter: REGISTERED");
 }
