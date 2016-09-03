@@ -27,7 +27,7 @@
 #include "mbed-connector-interface/DynamicResource.h"
 
 // our Digital out, tied to the reset line of the Cordio Beetle...
-DigitalOut  __switch(D0);
+DigitalOut  __switch(D3);
 
 // LED for confirmation
 DigitalOut  __led(LED3);
@@ -54,7 +54,7 @@ public:
     */
     BeaconSwitchResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"BeaconSwitch",M2MBase::GET_PUT_ALLOWED,observable) {
         // default is ON
-        __switch = 1;
+        __switch = 0;
         __led = 0;
         parking_meter_beacon_status(true);
     }
@@ -75,12 +75,12 @@ public:
     */
     virtual void put(const string value) {
         if (value.compare(string(OFF)) == 0) {
-            __switch = 0;
+            __switch = 1;
             __led = 1;
             parking_meter_beacon_status(false);
         }
         else {
-            __switch = 1;
+            __switch = 0;
             __led = 0;
             parking_meter_beacon_status(true);
         }
