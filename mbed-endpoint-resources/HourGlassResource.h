@@ -195,14 +195,19 @@ public:
             if (strcmp(value.c_str(),MY_DM_PASSPHRASE) == 0) {
                 // make sure we have a timer value set...
                 if (__fill_seconds > 0) {
-                    // reset 
-                    this->reset();
+                    // reset if we have a lingering expired thread...
+                    if (this->m_countdown_thread != NULL && __expired == true) {
+                        this->reset();
+                    }
                     
-                    // we are not expired
-                    __expired = false;
+                    // make sure we have no outstanding thread...
+                    if (this->m_countdown_thread == NULL) { 
+                        // reset for good measure
+                        this->reset();
+                        
+                        // we are not expired
+                        __expired = false;
                     
-                    // double check that we are ready to start a new thread....
-                    if (this->m_countdown_thread == NULL) {
                         // start the decrement thread
                         this->logger()->log("HourGlassResource: post() authenticated. Starting decrement thread...");
                         this->m_countdown_thread = new Thread(_decrementor);
