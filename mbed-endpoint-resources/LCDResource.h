@@ -133,7 +133,7 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
         // use the log line too... just give the stats...
         char buf[64];
         memset(buf,0,64); 
-        sprintf(buf,"Remain: %d sec of %d sec",value,fill_value);
+        sprintf(buf,"Rem: %dsec / %dsec",value,fill_value);
         parking_meter_log_status(buf);
         
         // if the remaining time is less than 25% of the total, color the led YELLOW

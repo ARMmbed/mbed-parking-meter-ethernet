@@ -26,6 +26,9 @@
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
 
+// JSON Parser
+#include "MbedJSONValue.h"
+
 // forward declarations
 static void *__instance = NULL;
 extern "C" void _decrementor(const void *args);
@@ -34,8 +37,11 @@ extern "C" void _decrementor(const void *args);
 extern "C" void update_parking_meter_stats(int value, int fill_value);
 
 // Hour Glass
-static int __fill_seconds = 0;      // current "fill" state to countdown to...
-static int __seconds = 0;           // current countdown value... starts at "fill" and decrements every second...
+static volatile bool __update_fill = false;  // trigger an update while decrementing...
+static volatile bool __expired = false;      // expired parking!
+static volatile int __fill_seconds = 0;      // current "fill" state to countdown to...
+static volatile int __add_seconds = 0;       // number of seconds to add to current "fill" state to countdown to...
+static volatile int __seconds = 0;           // current countdown value... starts at "fill" and decrements every second...
 
 /** HourGlassResource class
  */
@@ -60,6 +66,9 @@ public:
         __fill_seconds = 0;
         __seconds = 0;
         
+        // no updating
+        __update_fill = false;
+        
         // no Thread yet
         this->m_countdown_thread = NULL;
         
@@ -80,10 +89,95 @@ public:
     
     /**
     Put to configure the hourglass countdown fill level...
+    FORMAT: {"value":60,"cmd":"update","auth":"arm1234"}
+    FORMAT: {"value":60,"cmd":"set","auth":"arm1234"}
     */
     virtual void put(const string value) {
-        sscanf(value.c_str(),"%d",&__fill_seconds);
-        this->reset();
+        // parameter check...
+        if (value.length() > 0) {
+            // parse the JSON string
+            MbedJSONValue parser;
+            parse(parser,value.c_str());
+                        
+            // Look for the "cmd" value... if it exists, follow the appropriate command...
+            string cmd = parser["cmd"].get<std::string>();
+            if (cmd.length() > 0) {
+                // we need the authorization string
+                string auth = parser["auth"].get<std::string>();
+                if (strcmp(auth.c_str(),MY_DM_PASSPHRASE) == 0) {
+                    // extract the hourglass value...
+                    int fill_seconds = parser["value"].get<int>();
+
+                    // DEBUG
+                    this->logger()->log("HourGlassResource: put() authenticated cmd=%s fill_seconds=%d",cmd.c_str(),fill_seconds);
+                    
+                    // we have a authenticated command... lets parse it and act
+                    if (strcmp(cmd.c_str(),"update") == 0) {
+                        if (__expired == false) {
+                            // make sure the change is valid (i.e. we've already set our seconds... now we are updating it...)
+                            if (fill_seconds > 0 && __fill_seconds > 0) {
+                                // update!
+                                __fill_seconds += fill_seconds;
+                                __add_seconds = fill_seconds;
+                                
+                                // tell the thread to update itself
+                                __update_fill = true;
+                                
+                                // update the hourglass with a new velue
+                                this->logger()->log("HourGlassResource: put() adding additional seconds: %d  total: %d",fill_seconds,__fill_seconds);
+                            }
+                            else {
+                                // not updating... value unchanged or invalid
+                                this->logger()->log("HourGlassResource: put() ignoring update request: current: %d requested: %d (OK).",__fill_seconds,fill_seconds);
+                            }
+                        }
+                        else {
+                            // parking is already expired... so a new "set" is required...
+                            this->logger()->log("HourGlassResource: put() ignoring update request: parking timer has expired.(OK)");
+                        }
+                    }
+                    else if (strcmp(cmd.c_str(),"set") == 0) {
+                        // make sure the change is valid
+                        if (fill_seconds > 0 && fill_seconds != __fill_seconds) {
+                            // clean up if needed... 
+                            if (__expired == true) {
+                                this->reset();
+                            }
+                            
+                            // ensure we have no outstanding decrementor thread...
+                            if (this->m_countdown_thread == NULL) {
+                                // set the hourglass with a new value...
+                                this->logger()->log("HourGlassResource: put() setting new value: %d  last: %d",fill_seconds,__fill_seconds);
+                                __fill_seconds = fill_seconds;
+                            
+                                // initialize...
+                                this->reset();
+                            }
+                            else {
+                                // current timer already active... so you cannot set it again until the timer expires
+                                this->logger()->log("HourGlassResource: put() setting ignored... parking timer is active (%d sec / %d sec) (OK)",__seconds,__fill_seconds);
+                            }
+                        }
+                        else {
+                            // not resetting... value unchanged or invalid
+                            this->logger()->log("HourGlassResource: put() ignoring set request: current: %d requested: %d (OK).",__fill_seconds,fill_seconds);
+                        }
+                    }
+                    else {
+                        // unrecognized command - ignore
+                        this->logger()->log("HourGlassResource: put() authenticated cmd=%s is unrecognized... ignoring (OK).",cmd.c_str());
+                    }
+                }
+                else {
+                    // unauthenticated
+                    this->logger()->log("HourGlassResource: put() authentication ERROR. Invalid/Missing auth: [%s]",auth.c_str());
+                }
+            }
+            else {
+                // do nothing...
+                this->logger()->log("HourGlassResource: put() ignoring request (no command given) (OK).");
+            }
+        }
     }
     
     /**
@@ -99,14 +193,28 @@ public:
             
             // compare to our DM passphrase... if authenticated, then begin the countdown...
             if (strcmp(value.c_str(),MY_DM_PASSPHRASE) == 0) {
-                if (this->m_countdown_thread == NULL) {
-                    // start the decrement thread
-                    this->logger()->log("HourGlassResource: post() authenticated. Starting decrement thread...");
-                    this->m_countdown_thread = new Thread(_decrementor);
+                // make sure we have a timer value set...
+                if (__fill_seconds > 0) {
+                    // reset 
+                    this->reset();
+                    
+                    // we are not expired
+                    __expired = false;
+                    
+                    // double check that we are ready to start a new thread....
+                    if (this->m_countdown_thread == NULL) {
+                        // start the decrement thread
+                        this->logger()->log("HourGlassResource: post() authenticated. Starting decrement thread...");
+                        this->m_countdown_thread = new Thread(_decrementor);
+                    }
+                    else {
+                        // already running the decrement thread
+                        this->logger()->log("HourGlassResource: post() authenticated. Decrement thread already running (OK)...");
+                    }
                 }
                 else {
-                    // already running the decrement thread
-                    this->logger()->log("HourGlassResource: post() authenticated. Decrement thread already running (OK)...");
+                    // no timer value set... so do not start the thread...
+                    this->logger()->log("HourGlassResource: post() not starting decrement thread... no timer value has been set yet (OK).");
                 }
             }
             else {
@@ -123,11 +231,13 @@ public:
     
     // reset the countdown... clear the thread, reset the counter...
     void reset() {
-        if (this->m_countdown_thread != NULL) {
+        if (this->m_countdown_thread != NULL && __expired == true) {
             delete this->m_countdown_thread;
         }
         this->m_countdown_thread = NULL;
         __seconds = 0;
+        __update_fill = false;
+        __expired = false;
     }
 };
 
@@ -141,6 +251,13 @@ void _decrementor(const void *args) {
         update_parking_meter_stats(__seconds,__fill_seconds); // Write to LCD...
         Thread::wait(1000);                                   // wait 1 second
         __seconds -= 1;                                       // decrement 1 second
+        
+        // if an update occurs... update...
+        if (__update_fill == true) {
+            __seconds += __add_seconds;
+            __update_fill = false;
+            __add_seconds = 0;
+        }
     }
     
     // we are done.. so zero out
@@ -150,7 +267,7 @@ void _decrementor(const void *args) {
     if (me != NULL) {
         update_parking_meter_stats(0,__fill_seconds);
         me->observe();
-        me->reset();
+        __expired = true;
     }
 }
 
