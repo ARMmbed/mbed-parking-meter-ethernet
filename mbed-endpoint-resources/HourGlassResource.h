@@ -125,6 +125,9 @@ public:
                                 
                                 // update the hourglass with a new velue
                                 this->logger()->log("HourGlassResource: put() adding additional seconds: %d  total: %d",fill_seconds,__fill_seconds);
+                                
+                                // observe
+                                //this->observe();
                             }
                             else {
                                 // not updating... value unchanged or invalid
@@ -152,6 +155,9 @@ public:
                             
                                 // initialize...
                                 this->reset();
+                                
+                                // observe
+                                //this->observe();
                             }
                             else {
                                 // current timer already active... so you cannot set it again until the timer expires
