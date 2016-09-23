@@ -121,7 +121,7 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
     if (value <= 0) {
         // parking time expired
         __lcd.printf("Time: EXPIRED           ");
-        parking_meter_log_status("Remain: NONE            ");
+        parking_meter_log_status((char *)"Remain: NONE            ");
         
         // LED goes red
         parking_status_led_red();
@@ -152,10 +152,10 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
 extern "C" void parking_meter_beacon_status(bool enabled) 
 {
     if (enabled == true) {
-        parking_meter_log_status("PAID-FOR PARKING");
+        parking_meter_log_status((char *)"PAID-FOR PARKING");
     }
     else {
-        parking_meter_log_status("FREE PARKING");
+        parking_meter_log_status((char *)"FREE PARKING");
     }
 }
 
