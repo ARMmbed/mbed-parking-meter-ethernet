@@ -89,8 +89,9 @@ public:
     
     /**
     Put to configure the hourglass countdown fill level...
-    FORMAT: {"value":60,"cmd":"update","auth":"arm1234"}
-    FORMAT: {"value":60,"cmd":"set","auth":"arm1234"}
+    To set the parking time: {"value":60,"cmd":"set","auth":"arm1234"}
+    To update the current parking time: {"value":60,"cmd":"update","auth":"arm1234"}
+    To invoke (via PUT): {"cmd":"start","auth":"arm1234"}
     */
     virtual void put(const string value) {
         // parameter check...
@@ -104,15 +105,22 @@ public:
             if (cmd.length() > 0) {
                 // we need the authorization string
                 string auth = parser["auth"].get<std::string>();
-                if (strcmp(auth.c_str(),MY_DM_PASSPHRASE) == 0) {
-                    // extract the hourglass value...
-                    int fill_seconds = parser["value"].get<int>();
-
-                    // DEBUG
-                    this->logger()->log("HourGlassResource: put() authenticated cmd=%s fill_seconds=%d",cmd.c_str(),fill_seconds);
-                    
+                if (strcmp(auth.c_str(),MY_DM_PASSPHRASE) == 0) {                    
                     // we have a authenticated command... lets parse it and act
+#if ENABLE_PUT_TO_START
+                    if (strcmp(cmd.c_str(),"start") == 0) {
+                        // We are enabling the use of PUT to start the countdown...
+                        this->start_countdown(); 
+                    }
+                    else {
+#endif
                     if (strcmp(cmd.c_str(),"update") == 0) {
+                        // extract the hourglass value...
+                        int fill_seconds = parser["value"].get<int>();
+                        
+                        // DEBUG
+                        this->logger()->log("HourGlassResource: put() authenticated cmd=%s fill_seconds=%d",cmd.c_str(),fill_seconds);
+                    
                         if (__expired == false) {
                             // make sure the change is valid (i.e. we've already set our seconds... now we are updating it...)
                             if (fill_seconds > 0 && __fill_seconds > 0) {
@@ -140,6 +148,12 @@ public:
                         }
                     }
                     else if (strcmp(cmd.c_str(),"set") == 0) {
+                        // extract the hourglass value...
+                        int fill_seconds = parser["value"].get<int>();
+                        
+                        // DEBUG
+                        this->logger()->log("HourGlassResource: put() authenticated cmd=%s fill_seconds=%d",cmd.c_str(),fill_seconds);
+                        
                         // make sure the change is valid
                         if (fill_seconds > 0 && fill_seconds != __fill_seconds) {
                             // clean up if needed... 
@@ -173,6 +187,9 @@ public:
                         // unrecognized command - ignore
                         this->logger()->log("HourGlassResource: put() authenticated cmd=%s is unrecognized... ignoring (OK).",cmd.c_str());
                     }
+#if ENABLE_PUT_TO_START
+                    }
+#endif
                 }
                 else {
                     // unauthenticated
@@ -199,34 +216,8 @@ public:
             
             // compare to our DM passphrase... if authenticated, then begin the countdown...
             if (strcmp(value.c_str(),MY_DM_PASSPHRASE) == 0) {
-                // make sure we have a timer value set...
-                if (__fill_seconds > 0) {
-                    // reset if we have a lingering expired thread...
-                    if (this->m_countdown_thread != NULL && __expired == true) {
-                        this->reset();
-                    }
-                    
-                    // make sure we have no outstanding thread...
-                    if (this->m_countdown_thread == NULL) { 
-                        // reset for good measure
-                        this->reset();
-                        
-                        // we are not expired
-                        __expired = false;
-                    
-                        // start the decrement thread
-                        this->logger()->log("HourGlassResource: post() authenticated. Starting decrement thread...");
-                        this->m_countdown_thread = new Thread(_decrementor);
-                    }
-                    else {
-                        // already running the decrement thread
-                        this->logger()->log("HourGlassResource: post() authenticated. Decrement thread already running (OK)...");
-                    }
-                }
-                else {
-                    // no timer value set... so do not start the thread...
-                    this->logger()->log("HourGlassResource: post() not starting decrement thread... no timer value has been set yet (OK).");
-                }
+                // authenticated, start the countdown...
+                this->start_countdown();
             }
             else {
                 // unable to authenticate 
@@ -249,6 +240,41 @@ public:
         __seconds = 0;
         __update_fill = false;
         __expired = false;
+    }
+    
+private:
+    /**
+    Start the countdown
+    **/
+    void start_countdown() {
+        // make sure we have a timer value set...
+        if (__fill_seconds > 0) {
+            // reset if we have a lingering expired thread...
+            if (this->m_countdown_thread != NULL && __expired == true) {
+                this->reset();
+            }
+            
+            // make sure we have no outstanding thread...
+            if (this->m_countdown_thread == NULL) { 
+                // reset for good measure
+                this->reset();
+                
+                // we are not expired
+                __expired = false;
+            
+                // start the decrement thread
+                this->logger()->log("HourGlassResource: start_countdown() authenticated. Starting decrement thread...");
+                this->m_countdown_thread = new Thread(_decrementor);
+            }
+            else {
+                // already running the decrement thread
+                this->logger()->log("HourGlassResource: start_countdown() authenticated. Decrement thread already running (OK)...");
+            }
+        }
+        else {
+            // no timer value set... so do not start the thread...
+            this->logger()->log("HourGlassResource: start_countdown() not starting decrement thread... no timer value has been set yet (OK).");
+        }
     }
 };
 

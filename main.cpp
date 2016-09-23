@@ -33,6 +33,9 @@
 // Passphrase to supply for data management authentication
 #define MY_DM_PASSPHRASE		"arm1234"
 
+// Override: enable use of PUT to start parking countdown (default true)
+#define ENABLE_PUT_TO_START		true
+
 // Include security.h
 #include "security.h"
 
