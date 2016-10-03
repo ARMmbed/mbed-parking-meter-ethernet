@@ -39,6 +39,16 @@ extern "C" void parking_meter_beacon_status(bool enabled);
 #define OFF             "0"     // Go HIGH... --> turn BLE OFF
 #define ON              "1"     // Go LOW... --> turn BLE ON
 
+// external hooks for turning the beacon on and off
+extern "C" void turn_beacon_on(void) {
+    __switch = 0;
+    __led = 0;
+}
+extern "C" void turn_beacon_off(void) {
+    __switch = 1;
+    __led = 1;
+}
+
 /** BeaconSwitchResource class
  */
 class BeaconSwitchResource : public DynamicResource
@@ -54,8 +64,7 @@ public:
     */
     BeaconSwitchResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"BeaconSwitch",M2MBase::GET_PUT_ALLOWED,observable) {
         // default is ON
-        __switch = 0;
-        __led = 0;
+        turn_beacon_on();
         parking_meter_beacon_status(true);
     }
 
@@ -75,13 +84,11 @@ public:
     */
     virtual void put(const string value) {
         if (value.compare(string(OFF)) == 0) {
-            __switch = 1;
-            __led = 1;
+            turn_beacon_off();
             parking_meter_beacon_status(false);
         }
         else {
-            __switch = 0;
-            __led = 0;
+            turn_beacon_on();
             parking_meter_beacon_status(true);
         }
     }

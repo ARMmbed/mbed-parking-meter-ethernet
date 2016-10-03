@@ -33,6 +33,10 @@
 static void *__instance = NULL;
 extern "C" void _decrementor(const void *args);
 
+// hook for turning the beacon on/off
+extern "C" void turn_beacon_on(void);
+extern "C" void turn_beacon_off(void);
+
 // Linkage to LCD Resource (for writing updates)
 extern "C" void update_parking_meter_stats(int value, int fill_value);
 
@@ -261,6 +265,9 @@ private:
                 
                 // we are not expired
                 __expired = false;
+                
+                // turn off the beacon - we are now counting down... so no more advertisements...
+                turn_beacon_off();
             
                 // start the decrement thread
                 this->logger()->log("HourGlassResource: start_countdown() authenticated. Starting decrement thread...");
@@ -305,6 +312,9 @@ void _decrementor(const void *args) {
         update_parking_meter_stats(0,__fill_seconds);
         me->observe();
         __expired = true;
+        
+        // enable the beacon
+        turn_beacon_on();
     }
 }
 
