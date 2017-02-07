@@ -14,10 +14,4 @@
         }
     },
     "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\""],
-    "target_overrides": {
-        "*": {
-            "target.features_add": ["CLIENT", "COMMON_PAL"],
-            "mbed-client.reconnection-interval": 5
-        }
-    }
 }
