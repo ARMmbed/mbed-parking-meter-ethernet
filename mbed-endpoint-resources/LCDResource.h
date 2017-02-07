@@ -108,6 +108,9 @@ extern "C" char *calculate_time_remaining_bar(int value,int fill_value)
     memset(__bar,0,NUM_SLOTS+1);
     double remaining = calculate_percent_remaining(value,fill_value);
     int stop_index = (int)((remaining/100.0)*NUM_SLOTS);
+    for(int i=0;i<NUM_SLOTS;++i) {
+    	__bar[i] = ' ';
+    }
     for(int i=0;i<stop_index;++i) {
         __bar[i] = '*';
     }
