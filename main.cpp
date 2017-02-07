@@ -21,7 +21,7 @@
  */
 
 // CUSTOMIZE ME: Define the core Device Types, Firmware, Hardware, Software information
-#define ENABLE_DEVICE_MANAGER	true				// true - enable, false - disable
+#define ENABLE_DEVICE_MANAGER		true				// true - enable, false - disable
 #define MY_DEVICE_MFG			"NXP"
 #define MY_DEVICE_TYPE			"parking-meter"
 #define MY_DEVICE_MODEL			"K64F"
