@@ -40,27 +40,27 @@ static C12832 __lcd(D11, D13, D12, D7, D10);
 
 // multi-color LED (must disable when using pyOCD... D8 is the debugging line...)
 static PwmOut r (D5);
-static PwmOut b (D8);
+// static PwmOut b (D8);
 static PwmOut g (D9);
 
 // color LED RED
 extern "C" void parking_status_led_red() {
     r = 0.5;
-    b = 1.0;
+    // b = 1.0;
     g = 1.0;
 }
 
 // color LED DEFAULT
 extern "C" void parking_status_led_yellow() {
     r = 0.3;
-    b = 1.0;
+    // b = 1.0;
     g = 0.3;
 }
 
 // color LED GREEN
 extern "C" void parking_status_led_green() {
     r = 1.0;
-    b = 1.0;
+    // b = 1.0;
     g = 0.5;
 }
 
