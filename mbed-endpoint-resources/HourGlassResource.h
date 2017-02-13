@@ -40,12 +40,32 @@ extern "C" void turn_beacon_off(void);
 // Linkage to LCD Resource (for writing updates)
 extern "C" void update_parking_meter_stats(int value, int fill_value);
 
+// establish Time 
+#include "ntp-client/NTPClient.h"
+static NTPClient *ntp = NULL;
+
+// initialize our time
+extern "C" void init_time(){
+    extern NetworkInterface *__network_interface;
+    if (ntp == NULL) {
+        // allocate the NTP client
+        ntp = new NTPClient(__network_interface);
+        
+        // get the current time
+        time_t current_time = ntp->get_timestamp();
+        
+        // set the current time in the RTC
+        set_time(current_time);
+    }
+}
+
 // Hour Glass
 static volatile bool __update_fill = false;  // trigger an update while decrementing...
 static volatile bool __expired = false;      // expired parking!
 static volatile int __fill_seconds = 0;      // current "fill" state to countdown to...
 static volatile int __add_seconds = 0;       // number of seconds to add to current "fill" state to countdown to...
 static volatile int __seconds = 0;           // current countdown value... starts at "fill" and decrements every second...
+static volatile int __delta_seconds = 0;     // delta of # seconds since the web app issued the decrement command
 
 /** HourGlassResource class
  */
@@ -53,6 +73,7 @@ class HourGlassResource : public DynamicResource
 {
 private:
     Thread *m_countdown_thread;
+    char m_last_timestamp[128];
     
 public:
     /**
@@ -69,9 +90,13 @@ public:
         // set to expired (0)
         __fill_seconds = 0;
         __seconds = 0;
+        __delta_seconds = 0;
         
         // no updating
         __update_fill = false;
+        
+        // clear the timestamp
+        memset(m_last_timestamp,0,128);
         
         // no Thread yet
         this->m_countdown_thread = NULL;
@@ -113,6 +138,13 @@ public:
                     // we have a authenticated command... lets parse it and act
 #if ENABLE_PUT_TO_START
                     if (strcmp(cmd.c_str(),"start") == 0) {
+                        // adjust for the delay in roundtrip to "start"
+                        // sync with the time specified by the webapp
+                        __delta_seconds = this->sync_with_web_app_time(this->m_last_timestamp);
+                        
+                        // DEBUG
+                        this->logger()->log("HourGlassResource: put() delta_seconds=%d",__delta_seconds);
+                        
                         // We are enabling the use of PUT to start the countdown...
                         this->start_countdown(); 
                     }
@@ -154,6 +186,10 @@ public:
                     else if (strcmp(cmd.c_str(),"set") == 0) {
                         // extract the hourglass value...
                         int fill_seconds = parser["value"].get<int>();
+                        
+                        // save off the timestamp...
+                        memset(this->m_last_timestamp,0,128);
+                        sprintf(this->m_last_timestamp,"%s",parser["ts"].get<std::string>().c_str());
                         
                         // DEBUG
                         this->logger()->log("HourGlassResource: put() authenticated cmd=%s fill_seconds=%d",cmd.c_str(),fill_seconds);
@@ -248,6 +284,22 @@ public:
     
 private:
     /**
+    Sync time with web app time
+    **/
+    int sync_with_web_app_time(char *webapp_timestamp) {
+        time_t web_app_seconds_since_epoch = 0;
+        
+        // read in the timestamp
+        sscanf(webapp_timestamp,"%lu",&web_app_seconds_since_epoch);
+                
+        // endpoint time (NOW)
+        time_t our_seconds_since_epoch = time(NULL) * 1000;
+        
+        // difference in time
+        return (time_t)((our_seconds_since_epoch - web_app_seconds_since_epoch)/1000);
+    }
+    
+    /**
     Start the countdown
     **/
     void start_countdown() {
@@ -289,6 +341,9 @@ private:
 void _decrementor(const void *args) {
     HourGlassResource *me = (HourGlassResource *)__instance;
     __seconds = __fill_seconds;
+    
+    // update for time since dispatch
+    __seconds -= __delta_seconds;
     
     // Countdown...
     while(__seconds >= 0) {

@@ -26,6 +26,9 @@
 // LCD functions
 extern "C" void parking_meter_log_status(char *status);
 
+// NTP functions
+extern "C" void init_time();
+
 // Forward declarations of public functions in mbedEndpointNetwork
 #include "mbed-connector-interface/mbedEndpointNetworkImpl.h"
 
@@ -48,4 +51,5 @@ void ConnectionHandler::begin_object_unregistering(void * /* ep */) {
 
 void ConnectionHandler::object_registered(void * /* ep */,void * /* security */,void * /*data */) {
     parking_meter_log_status((char *)"Meter: REGISTERED");
+    init_time();
 }
