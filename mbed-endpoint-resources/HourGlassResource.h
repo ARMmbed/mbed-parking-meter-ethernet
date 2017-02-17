@@ -35,6 +35,9 @@
 // Number of tries for NTP
 #define NTP_NUM_TRIES   5
 
+// MAX time SKEW allowed
+#define MAX_TIME_SKEW	5
+
 // forward declarations
 static void *__instance = NULL;
 extern "C" void _decrementor(const void *args);
@@ -318,7 +321,17 @@ private:
         time_t our_seconds_since_epoch = time(NULL) * 1000;
         
         // difference in time
-        return (time_t)((our_seconds_since_epoch - web_app_seconds_since_epoch)/1000);
+        time_t diff = (time_t)((our_seconds_since_epoch - web_app_seconds_since_epoch)/1000);
+        if (diff < 0 || diff > MAX_TIME_SKEW) {
+            // set the diff to the max allowed
+            diff = (time_t)MAX_TIME_SKEW;
+            
+            // DEBUG
+            this->logger()->log("HourGlassResource: sync_with_web_app_time: difference exceeded. set to %d seconds",MAX_TIME_SKEW);
+        }
+        
+        // return the difference
+        return (int)diff;
     }
     
     /**
