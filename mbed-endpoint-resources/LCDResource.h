@@ -152,13 +152,16 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
 }
 
 // Parking Meter Beacon Status
-extern "C" void parking_meter_beacon_status(bool enabled) 
+extern "C" void parking_meter_beacon_status(int status) 
 {
-    if (enabled == true) {
-        parking_meter_log_status((char *)"PAID-FOR PARKING");
-    }
-    else {
+    if (status == 0) {
         parking_meter_log_status((char *)"FREE PARKING");
+    }
+    else if (status == 2) {
+        parking_meter_log_status((char *)"BEACON-OFF");
+    }
+    else if (status == 1) {
+        parking_meter_log_status((char *)"PAID-FOR PARKING");
     }
 }
 

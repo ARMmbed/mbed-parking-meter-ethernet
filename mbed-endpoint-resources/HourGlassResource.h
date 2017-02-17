@@ -29,6 +29,12 @@
 // JSON Parser
 #include "MbedJSONValue.h"
 
+// we define "a second" and match it to what the web app should expect
+#define CLOCK_SECOND    680
+
+// Number of tries for NTP
+#define NTP_NUM_TRIES   5
+
 // forward declarations
 static void *__instance = NULL;
 extern "C" void _decrementor(const void *args);
@@ -40,22 +46,34 @@ extern "C" void turn_beacon_off(void);
 // Linkage to LCD Resource (for writing updates)
 extern "C" void update_parking_meter_stats(int value, int fill_value);
 
-// establish Time 
+// Linkaage to FreeParking state
+extern "C" bool freeParkingEnabled();
+
+// establish Time
 #include "ntp-client/NTPClient.h"
 static NTPClient *ntp = NULL;
 
 // initialize our time
 extern "C" void init_time(){
     extern NetworkInterface *__network_interface;
+    bool time_set = false;
     if (ntp == NULL) {
         // allocate the NTP client
         ntp = new NTPClient(__network_interface);
-        
-        // get the current time
-        time_t current_time = ntp->get_timestamp();
-        
-        // set the current time in the RTC
-        set_time(current_time);
+        for(int i=0;ntp != NULL && i<NTP_NUM_TRIES && time_set == false;++i) {
+            // get the current time
+            time_t current_time = ntp->get_timestamp();
+            if (current_time > 0) {
+                // set the current time in the RTC
+                set_time(current_time);
+                time_set = true;
+            }
+        }
+
+        // DEBUG
+        if (time_set == false) {
+            pc.printf("ERROR: Unable to capture current time from NTP...Please reboot\r\n");
+        }
     }
 }
 
@@ -137,7 +155,7 @@ public:
                 if (strcmp(auth.c_str(),MY_DM_PASSPHRASE) == 0) {                    
                     // we have a authenticated command... lets parse it and act
 #if ENABLE_PUT_TO_START
-                    if (strcmp(cmd.c_str(),"start") == 0) {
+                    if (strcmp(cmd.c_str(),"start") == 0 && freeParkingEnabled() == false) {
                         // adjust for the delay in roundtrip to "start"
                         // sync with the time specified by the webapp
                         __delta_seconds = this->sync_with_web_app_time(this->m_last_timestamp);
@@ -147,6 +165,10 @@ public:
                         
                         // We are enabling the use of PUT to start the countdown...
                         this->start_countdown(); 
+                    }
+                    else if (strcmp(cmd.c_str(),"start") == 0) {
+                        // ignore... we tried to start parking countdown but are in the free parking mode
+                        this->logger()->log("HourGlassResource: FREE_PARKING enabled. Countdown start ignored (OK).");
                     }
                     else {
 #endif
@@ -347,8 +369,8 @@ void _decrementor(const void *args) {
     
     // Countdown...
     while(__seconds >= 0) {
-        update_parking_meter_stats(__seconds,__fill_seconds); // Write to LCD...
-        Thread::wait(1000);                                   // wait 1 second
+        update_parking_meter_stats(__seconds,__fill_seconds); // Write to LCD... (this takes n "ms"...)
+        Thread::wait(CLOCK_SECOND);                           // wait 1 CLOCK_SECOND
         __seconds -= 1;                                       // decrement 1 second
         
         // if an update occurs... update...

@@ -32,12 +32,16 @@ DigitalOut  __switch(D3);
 // LED for confirmation
 DigitalOut  __led(LED3);
 
+// free parking state
+static bool free_parking = false;
+
 // Linkage to LCD Resource (for writing updates)
-extern "C" void parking_meter_beacon_status(bool enabled);
+extern "C" void parking_meter_beacon_status(int status);
 
 // possible switch states
 #define OFF             "0"     // Go HIGH... --> turn BLE OFF
 #define ON              "1"     // Go LOW... --> turn BLE ON
+#define NO_BEACON       "2"     // Go HIGH... --> turn BLE OFF
 
 // external hooks for turning the beacon on and off
 extern "C" void turn_beacon_on(void) {
@@ -47,6 +51,11 @@ extern "C" void turn_beacon_on(void) {
 extern "C" void turn_beacon_off(void) {
     __switch = 1;
     __led = 1;
+}
+
+// Free parking state
+extern "C" bool freeParkingEnabled() {
+    return free_parking;
 }
 
 /** BeaconSwitchResource class
@@ -84,12 +93,22 @@ public:
     */
     virtual void put(const string value) {
         if (value.compare(string(OFF)) == 0) {
+            // FREE PARKING
             turn_beacon_off();
-            parking_meter_beacon_status(false);
+            free_parking = true;
+            parking_meter_beacon_status(0);
+        }
+        else if (value.compare(string(NO_BEACON)) == 0) {
+            // NO BEACON (PAID-FOR) PARKING
+            turn_beacon_off();
+            free_parking = false;
+            parking_meter_beacon_status(2);
         }
         else {
+            // PAID-FOR PARKING
             turn_beacon_on();
-            parking_meter_beacon_status(true);
+            free_parking = false;
+            parking_meter_beacon_status(1);
         }
     }
 };
