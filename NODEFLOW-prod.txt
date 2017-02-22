@@ -1,1 +1,537 @@
-[{"id":"cfc6121e.32174","type":"ibmiot in","z":"1268ff4a.379261","authentication":"apiKey","apiKey":"c088c9cd.20fee8","inputType":"evt","deviceId":"MBED_ENDPOINT_NAME_GOES_HERE","applicationId":"","deviceType":"parking-meter","eventType":"notify","commandType":"","format":"json","name":"parking meter command responses","service":"registered","allDevices":false,"allApplications":"","allDeviceTypes":false,"allEvents":false,"allCommands":"","allFormats":false,"qos":"0","x":177.77770233154297,"y":637.7777528762817,"wires":[["22090ed3.97bd52"]]},{"id":"22090ed3.97bd52","type":"switch","z":"1268ff4a.379261","name":"Is it the parking meter time value?","property":"payload.path","propertyType":"msg","rules":[{"t":"eq","v":"/100/0/1","vt":"str"}],"checkall":"true","outputs":1,"x":197.59915161132812,"y":515.6508550643921,"wires":[["6a4b350c.5e811c","7c16a5ca.095dac"]]},{"id":"fb1190d2.e0e8c","type":"template","z":"1268ff4a.379261","name":"Start Parking Countdown","field":"payload","fieldType":"msg","format":"json","syntax":"mustache","template":"{ \"resourceId\":\"100/0/1\", \"payload\":\"eyJjbWQiOiJzdGFydCIsImF1dGgiOiJhcm0xMjM0In0=\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }","x":700.5831832885742,"y":586.2739381790161,"wires":[["606db714.51b018","7b939386.36431c"]]},{"id":"94752a7a.e85bd8","type":"switch","z":"1268ff4a.379261","name":"Did parking time just get set?","property":"value","propertyType":"msg","rules":[{"t":"gt","v":"5","vt":"num"}],"checkall":"true","outputs":1,"x":448.1905746459961,"y":586.2737855911255,"wires":[["fb1190d2.e0e8c"]]},{"id":"7c16a5ca.095dac","type":"switch","z":"1268ff4a.379261","name":"Did parking time just expire?","property":"payload.payload","propertyType":"msg","rules":[{"t":"eq","v":"MA==","vt":"str"}],"checkall":"true","outputs":1,"x":518.5555572509766,"y":482.2858657836914,"wires":[["2429da73.f8a426"]]},{"id":"606db714.51b018","type":"ibmiot out","z":"1268ff4a.379261","authentication":"apiKey","apiKey":"c088c9cd.20fee8","outputType":"cmd","deviceId":"MBED_ENDPOINT_NAME_GOES_HERE","deviceType":"parking-meter","eventCommandType":"put","format":"json","data":"0","qos":"","name":"set parking meter resource value (PUT)","service":"registered","x":1048.8368377685547,"y":399.77380752563477,"wires":[]},{"id":"410202cb.7cc68c","type":"template","z":"1268ff4a.379261","name":"Add 12 seconds to the current Parking Time","field":"payload","fieldType":"msg","format":"json","syntax":"mustache","template":"{ \"resourceId\":\"100/0/1\", \"payload\":\"eyJ2YWx1ZSI6MTIsImNtZCI6InVwZGF0ZSIsImF1dGgiOiJhcm0xMjM0In0=\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }","x":516.7024765014648,"y":691.2977724075317,"wires":[["606db714.51b018"]]},{"id":"2429da73.f8a426","type":"debug","z":"1268ff4a.379261","name":"","active":true,"console":"false","complete":"payload.ep","x":978.0476608276367,"y":469.7378053665161,"wires":[]},{"id":"6a4b350c.5e811c","type":"function","z":"1268ff4a.379261","name":"Base64DecodeToValueJSON","func":"var Base64 = {\n    _keyStr: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\",\n    encode: function(e) {\n        var t = \"\";\n        var n, r, i, s, o, u, a;\n        var f = 0;\n        e = Base64._utf8_encode(e);\n        while (f < e.length) {\n            n = e.charCodeAt(f++);\n            r = e.charCodeAt(f++);\n            i = e.charCodeAt(f++);\n            s = n >> 2;\n            o = (n & 3) << 4 | r >> 4;\n            u = (r & 15) << 2 | i >> 6;\n            a = i & 63;\n            if (isNaN(r)) {\n                u = a = 64\n            } else if (isNaN(i)) {\n                a = 64\n            }\n            t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a)\n        }\n        return t\n    },\n    decode: function(e) {\n        var t = \"\";\n        var n, r, i;\n        var s, o, u, a;\n        var f = 0;\n        e = e.replace(/[^A-Za-z0-9+/=]/g, \"\");\n        while (f < e.length) {\n            s = this._keyStr.indexOf(e.charAt(f++));\n            o = this._keyStr.indexOf(e.charAt(f++));\n            u = this._keyStr.indexOf(e.charAt(f++));\n            a = this._keyStr.indexOf(e.charAt(f++));\n            n = s << 2 | o >> 4;\n            r = (o & 15) << 4 | u >> 2;\n            i = (u & 3) << 6 | a;\n            t = t + String.fromCharCode(n);\n            if (u != 64) {\n                t = t + String.fromCharCode(r)\n            }\n            if (a != 64) {\n                t = t + String.fromCharCode(i)\n            }\n        }\n        t = Base64._utf8_decode(t);\n        return t\n    },\n    _utf8_encode: function(e) {\n        e = e.replace(/rn/g, \"n\");\n        var t = \"\";\n        for (var n = 0; n < e.length; n++) {\n            var r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r)\n            } else if (r > 127 && r < 2048) {\n                t += String.fromCharCode(r >> 6 | 192);\n                t += String.fromCharCode(r & 63 | 128)\n            } else {\n                t += String.fromCharCode(r >> 12 | 224);\n                t += String.fromCharCode(r >> 6 & 63 | 128);\n                t += String.fromCharCode(r & 63 | 128)\n            }\n        }\n        return t\n    },\n    _utf8_decode: function(e) {\n        var t = \"\";\n        var n = 0;\n        var r, c2;\n        while (n < e.length) {\n            r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r);\n                n++\n            } else if (r > 191 && r < 224) {\n                c2 = e.charCodeAt(n + 1);\n                t += String.fromCharCode((r & 31) << 6 | c2 & 63);\n                n += 2\n            } else {\n                c2 = e.charCodeAt(n + 1);\n                c3 = e.charCodeAt(n + 2);\n                t += String.fromCharCode((r & 15) << 12 | (c2 & 63) << 6 | c3 & 63);\n                n += 3\n            }\n        }\n        return t\n    }\n};\nvar json_str = Base64.decode(msg.payload.payload);\nvar json_obj = JSON.parse(json_str);\nreturn {\"value\":json_obj.value};","outputs":1,"noerr":0,"x":520.1781234741211,"y":537.4639711380005,"wires":[["94752a7a.e85bd8"]]},{"id":"7b939386.36431c","type":"debug","z":"1268ff4a.379261","name":"","active":false,"console":"false","complete":"false","x":969.9917526245117,"y":584.8415956497192,"wires":[]},{"id":"76941924.0f9468","type":"inject","z":"1268ff4a.379261","name":"Add To Parking Time","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"x":221.84908294677734,"y":692.1274843215942,"wires":[["410202cb.7cc68c"]]},{"id":"fc84ae05.1d0ff","type":"debug","z":"1268ff4a.379261","name":"","active":false,"console":"false","complete":"false","x":968.547492980957,"y":341.5400037765503,"wires":[]},{"id":"7a7b5e0c.fd2ac","type":"inject","z":"1268ff4a.379261","name":"Start 60 second Parking Test","topic":"","payload":"{\"timestamp\": \"Thu Feb 16 2017 16:29:22 GMT-0600 (CST)\", \"meterid\": \"PARKING_METER_ID_GOES_HERE\", \"parking_time\": \"60\"}","payloadType":"json","repeat":"","crontab":"","once":false,"x":177.06338500976562,"y":478.57172298431396,"wires":[["5f35f814.0a7d78"]]},{"id":"8bf3d9dd.67ec78","type":"function","z":"1268ff4a.379261","name":"Create Parking Time JSON","func":"// Endpoint Name\nvar endpoint_name = \"MBED_ENDPOINT_NAME_GOES_HERE\";\n\n// skew factor of time between webapp and K64F (example: web app 1 second == 0.75 second on K64F)\nvar skew_factor = 1.0;\n\n// Base64 Support\nvar Base64 = {\n    _keyStr: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\",\n    encode: function(e) {\n        var t = \"\";\n        var n, r, i, s, o, u, a;\n        var f = 0;\n        e = Base64._utf8_encode(e);\n        while (f < e.length) {\n            n = e.charCodeAt(f++);\n            r = e.charCodeAt(f++);\n            i = e.charCodeAt(f++);\n            s = n >> 2;\n            o = (n & 3) << 4 | r >> 4;\n            u = (r & 15) << 2 | i >> 6;\n            a = i & 63;\n            if (isNaN(r)) {\n                u = a = 64;\n            } else if (isNaN(i)) {\n                a = 64;\n            }\n            t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a);\n        }\n        return t;\n    },\n    decode: function(e) {\n        var t = \"\";\n        var n, r, i;\n        var s, o, u, a;\n        var f = 0;\n        e = e.replace(/[^A-Za-z0-9+/=]/g, \"\");\n        while (f < e.length) {\n            s = this._keyStr.indexOf(e.charAt(f++));\n            o = this._keyStr.indexOf(e.charAt(f++));\n            u = this._keyStr.indexOf(e.charAt(f++));\n            a = this._keyStr.indexOf(e.charAt(f++));\n            n = s << 2 | o >> 4;\n            r = (o & 15) << 4 | u >> 2;\n            i = (u & 3) << 6 | a;\n            t = t + String.fromCharCode(n);\n            if (u != 64) {\n                t = t + String.fromCharCode(r);\n            }\n            if (a != 64) {\n                t = t + String.fromCharCode(i);\n            }\n        }\n        t = Base64._utf8_decode(t);\n        return t;\n    },\n    _utf8_encode: function(e) {\n        e = e.replace(/rn/g, \"n\");\n        var t = \"\";\n        for (var n = 0; n < e.length; n++) {\n            var r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r);\n            } else if (r > 127 && r < 2048) {\n                t += String.fromCharCode(r >> 6 | 192);\n                t += String.fromCharCode(r & 63 | 128);\n            } else {\n                t += String.fromCharCode(r >> 12 | 224);\n                t += String.fromCharCode(r >> 6 & 63 | 128);\n                t += String.fromCharCode(r & 63 | 128);\n            }\n        }\n        return t;\n    },\n    _utf8_decode: function(e) {\n        var t = \"\";\n        var n = 0;\n        var r, c2;\n        while (n < e.length) {\n            r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r);\n                n++\n            } else if (r > 191 && r < 224) {\n                c2 = e.charCodeAt(n + 1);\n                t += String.fromCharCode((r & 31) << 6 | c2 & 63);\n                n += 2\n            } else {\n                c2 = e.charCodeAt(n + 1);\n                c3 = e.charCodeAt(n + 2);\n                t += String.fromCharCode((r & 15) << 12 | (c2 & 63) << 6 | c3 & 63);\n                n += 3\n            }\n        }\n        return t\n    }\n};\n\n// convert the input string to a JSON object\nvar input_json = JSON.parse(msg.payload);\n\n// get the parking meter time\nvar input_parking_time = Number(input_json.parking_time);\n\n// get the timestamp as well\nvar parking_timestamp = Date.parse(input_json.timestamp);\n\n// account for skew time differences between the web app and the K64F...\nvar skew_time_ms = input_parking_time * (1.0 - skew_factor) * 1000;\nparking_timestamp -= skew_time_ms;\n\n// create the command JSON\nvar parking_time_json = \"{\\\"value\\\":\";\nvar parking_time_json_1 = parking_time_json.concat(input_parking_time);\nvar parking_time_json_2 = parking_time_json_1.concat(\",\\\"ts\\\":\\\"\");\nvar parking_time_json_3 = parking_time_json_2.concat(parking_timestamp);\nvar parking_time_json_4 = parking_time_json_3.concat(\"\\\",\\\"cmd\\\":\\\"set\\\",\\\"auth\\\":\\\"arm1234\\\"}\");\nvar parking_time_json_b64 = Base64.encode(parking_time_json_4);\nvar payload = \"{ \\\"resourceId\\\":\\\"100/0/1\\\", \\\"payload\\\":\\\"\";\nvar payload_1 = payload.concat(parking_time_json_b64);\nvar payload_2 = payload_1.concat(\"\\\", \\\"deviceId\\\":\\\"\");\nvar payload_3 = payload_2.concat(endpoint_name);\nvar payload_4 = payload_3.concat(\"\\\", \\\"method\\\":\\\"PUT\\\" }\");\n\n// initialize our message as an empty one\nmsg = {};\n\n// assign and return the JSON\nmsg.payload = payload_4;\nreturn msg;","outputs":1,"noerr":0,"x":607.3613433837891,"y":398.68307876586914,"wires":[["606db714.51b018","fc84ae05.1d0ff"]]},{"id":"94ad5ad1.a61738","type":"ibmiot in","z":"1268ff4a.379261","authentication":"apiKey","apiKey":"c088c9cd.20fee8","inputType":"cmd","deviceId":"PARKING_METER_ID_GOES_HERE","applicationId":"","deviceType":"bridge","eventType":"start","commandType":"start","format":"json","name":"ARM Marketing Bridge","service":"registered","allDevices":false,"allApplications":"","allDeviceTypes":"","allEvents":false,"allCommands":"","allFormats":"","qos":0,"x":142.73006439208984,"y":396.55588150024414,"wires":[[]]},{"id":"5f35f814.0a7d78","type":"function","z":"1268ff4a.379261","name":"Convert JSON Object to JSON String","func":"var str_payload = JSON.stringify(msg.payload);\nmsg = {};\nmsg.payload = str_payload;\nreturn msg;","outputs":1,"noerr":0,"x":313.60308837890625,"y":433.159029006958,"wires":[["8bf3d9dd.67ec78"]]},{"id":"af92be5e.ce3f5","type":"template","z":"1268ff4a.379261","name":"Beacon ON","field":"payload","fieldType":"msg","format":"json","syntax":"mustache","template":"{ \"resourceId\":\"200/0/1\", \"payload\":\"MQ==\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }","x":554.4443664550781,"y":250.00001525878906,"wires":[["606db714.51b018"]]},{"id":"4edd945e.bb279c","type":"template","z":"1268ff4a.379261","name":"Beacon OFF","field":"payload","fieldType":"msg","format":"json","syntax":"mustache","template":"{ \"resourceId\":\"200/0/1\", \"payload\":\"MA==\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }","x":554.7021713256836,"y":161.58731746673584,"wires":[["606db714.51b018"]]},{"id":"8a2d2773.9d47d8","type":"inject","z":"1268ff4a.379261","name":"Set FREE PARKING","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"x":130.21803665161133,"y":162.83374691009521,"wires":[["4edd945e.bb279c"]]},{"id":"f0cf54eb.fc7a68","type":"inject","z":"1268ff4a.379261","name":"Set PAID PARKING","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"x":124.82107543945312,"y":240.99233627319336,"wires":[["af92be5e.ce3f5"]]},{"id":"beb602cb.0441c","type":"http in","z":"1268ff4a.379261","name":"Free Parking","url":"/freePARKING_METER_ID_GOES_HERE","method":"post","swaggerDoc":"","x":110.05145645141602,"y":123.50400352478027,"wires":[["ebb9a5cd.5f8d98","4edd945e.bb279c"]]},{"id":"ebb9a5cd.5f8d98","type":"http response","z":"1268ff4a.379261","name":"","x":421.4959144592285,"y":122.69844722747803,"wires":[]},{"id":"bab6b524.516568","type":"http in","z":"1268ff4a.379261","name":"Paid Parking","url":"/paidPARKING_METER_ID_GOES_HERE","method":"post","swaggerDoc":"","x":107.10704803466797,"y":201.2540044784546,"wires":[["1ac9b75b.057139","af92be5e.ce3f5"]]},{"id":"1ac9b75b.057139","type":"http response","z":"1268ff4a.379261","name":"","x":418.88483810424805,"y":201.67067432403564,"wires":[]},{"id":"80a99045.64ba4","type":"http in","z":"1268ff4a.379261","name":"Start Parking","url":"/startPARKING_METER_ID_GOES_HERE","method":"post","swaggerDoc":"","x":111.77367401123047,"y":356.2539691925049,"wires":[["48c49046.c4a37","8bf3d9dd.67ec78"]]},{"id":"48c49046.c4a37","type":"http response","z":"1268ff4a.379261","name":"","x":422.2181396484375,"y":354.67065238952637,"wires":[]},{"id":"97b6145f.178a88","type":"template","z":"1268ff4a.379261","name":"Beacon OFF PAID PARKING","field":"payload","fieldType":"msg","format":"json","syntax":"mustache","template":"{ \"resourceId\":\"200/0/1\", \"payload\":\"Mg==\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }","x":605.7736206054688,"y":319.3651313781738,"wires":[["606db714.51b018"]]},{"id":"fa3f1b61.cabb78","type":"inject","z":"1268ff4a.379261","name":"Set Beacon OFF PAID PARKING","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"x":166.1503143310547,"y":317.02409744262695,"wires":[["97b6145f.178a88"]]},{"id":"2ac4d485.7b06bc","type":"http in","z":"1268ff4a.379261","name":"Beacon OFF Paid Parking","url":"/nobeaconPARKING_METER_ID_GOES_HERE","method":"post","swaggerDoc":"","x":146.21408081054688,"y":279.5079803466797,"wires":[["ab50e503.7f7bb8","97b6145f.178a88"]]},{"id":"ab50e503.7f7bb8","type":"http response","z":"1268ff4a.379261","name":"","x":421.32521057128906,"y":276.59131813049316,"wires":[]},{"id":"c088c9cd.20fee8","type":"ibmiot","z":"","name":"ARM Marketing ","keepalive":"60","cleansession":true,"appId":"","shared":false}]
+[
+    {
+        "allApplications": "", 
+        "allCommands": "", 
+        "allDeviceTypes": false, 
+        "allDevices": false, 
+        "allEvents": false, 
+        "allFormats": false, 
+        "apiKey": "c088c9cd.20fee8", 
+        "applicationId": "", 
+        "authentication": "apiKey", 
+        "commandType": "", 
+        "deviceId": "MBED_ENDPOINT_NAME_GOES_HERE", 
+        "deviceType": "parking-meter", 
+        "eventType": "notify", 
+        "format": "json", 
+        "id": "cfc6121e.32174", 
+        "inputType": "evt", 
+        "name": "parking meter command responses", 
+        "qos": "0", 
+        "service": "registered", 
+        "type": "ibmiot in", 
+        "wires": [
+            [
+                "22090ed3.97bd52"
+            ]
+        ], 
+        "x": 177.77770233154297, 
+        "y": 637.7777528762817, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "checkall": "true", 
+        "id": "22090ed3.97bd52", 
+        "name": "Is it the parking meter time value?", 
+        "outputs": 1, 
+        "property": "payload.path", 
+        "propertyType": "msg", 
+        "rules": [
+            {
+                "t": "eq", 
+                "v": "/100/0/1", 
+                "vt": "str"
+            }
+        ], 
+        "type": "switch", 
+        "wires": [
+            [
+                "6a4b350c.5e811c", 
+                "7c16a5ca.095dac"
+            ]
+        ], 
+        "x": 197.59915161132812, 
+        "y": 515.6508550643921, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "field": "payload", 
+        "fieldType": "msg", 
+        "format": "json", 
+        "id": "fb1190d2.e0e8c", 
+        "name": "Start Parking Countdown", 
+        "syntax": "mustache", 
+        "template": "{ \"resourceId\":\"100/0/1\", \"payload\":\"eyJjbWQiOiJzdGFydCIsImF1dGgiOiJhcm0xMjM0In0=\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }", 
+        "type": "template", 
+        "wires": [
+            [
+                "606db714.51b018", 
+                "7b939386.36431c"
+            ]
+        ], 
+        "x": 700.5831832885742, 
+        "y": 586.2739381790161, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "checkall": "true", 
+        "id": "94752a7a.e85bd8", 
+        "name": "Did parking time just get set?", 
+        "outputs": 1, 
+        "property": "value", 
+        "propertyType": "msg", 
+        "rules": [
+            {
+                "t": "gt", 
+                "v": "5", 
+                "vt": "num"
+            }
+        ], 
+        "type": "switch", 
+        "wires": [
+            [
+                "fb1190d2.e0e8c"
+            ]
+        ], 
+        "x": 448.1905746459961, 
+        "y": 586.2737855911255, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "checkall": "true", 
+        "id": "7c16a5ca.095dac", 
+        "name": "Did parking time just expire?", 
+        "outputs": 1, 
+        "property": "payload.payload", 
+        "propertyType": "msg", 
+        "rules": [
+            {
+                "t": "eq", 
+                "v": "MA==", 
+                "vt": "str"
+            }
+        ], 
+        "type": "switch", 
+        "wires": [
+            [
+                "2429da73.f8a426"
+            ]
+        ], 
+        "x": 518.5555572509766, 
+        "y": 482.2858657836914, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "apiKey": "c088c9cd.20fee8", 
+        "authentication": "apiKey", 
+        "data": "0", 
+        "deviceId": "MBED_ENDPOINT_NAME_GOES_HERE", 
+        "deviceType": "parking-meter", 
+        "eventCommandType": "put", 
+        "format": "json", 
+        "id": "606db714.51b018", 
+        "name": "set parking meter resource value (PUT)", 
+        "outputType": "cmd", 
+        "qos": "", 
+        "service": "registered", 
+        "type": "ibmiot out", 
+        "wires": [], 
+        "x": 1048.8368377685547, 
+        "y": 399.77380752563477, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "field": "payload", 
+        "fieldType": "msg", 
+        "format": "json", 
+        "id": "410202cb.7cc68c", 
+        "name": "Add 12 seconds to the current Parking Time", 
+        "syntax": "mustache", 
+        "template": "{ \"resourceId\":\"100/0/1\", \"payload\":\"eyJ2YWx1ZSI6MTIsImNtZCI6InVwZGF0ZSIsImF1dGgiOiJhcm0xMjM0In0=\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }", 
+        "type": "template", 
+        "wires": [
+            [
+                "606db714.51b018"
+            ]
+        ], 
+        "x": 516.7024765014648, 
+        "y": 691.2977724075317, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "active": true, 
+        "complete": "payload.ep", 
+        "console": "false", 
+        "id": "2429da73.f8a426", 
+        "name": "", 
+        "type": "debug", 
+        "wires": [], 
+        "x": 976.9365844726562, 
+        "y": 480.84889221191406, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "func": "var Base64 = {\n    _keyStr: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\",\n    encode: function(e) {\n        var t = \"\";\n        var n, r, i, s, o, u, a;\n        var f = 0;\n        e = Base64._utf8_encode(e);\n        while (f < e.length) {\n            n = e.charCodeAt(f++);\n            r = e.charCodeAt(f++);\n            i = e.charCodeAt(f++);\n            s = n >> 2;\n            o = (n & 3) << 4 | r >> 4;\n            u = (r & 15) << 2 | i >> 6;\n            a = i & 63;\n            if (isNaN(r)) {\n                u = a = 64\n            } else if (isNaN(i)) {\n                a = 64\n            }\n            t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a)\n        }\n        return t\n    },\n    decode: function(e) {\n        var t = \"\";\n        var n, r, i;\n        var s, o, u, a;\n        var f = 0;\n        e = e.replace(/[^A-Za-z0-9+/=]/g, \"\");\n        while (f < e.length) {\n            s = this._keyStr.indexOf(e.charAt(f++));\n            o = this._keyStr.indexOf(e.charAt(f++));\n            u = this._keyStr.indexOf(e.charAt(f++));\n            a = this._keyStr.indexOf(e.charAt(f++));\n            n = s << 2 | o >> 4;\n            r = (o & 15) << 4 | u >> 2;\n            i = (u & 3) << 6 | a;\n            t = t + String.fromCharCode(n);\n            if (u != 64) {\n                t = t + String.fromCharCode(r)\n            }\n            if (a != 64) {\n                t = t + String.fromCharCode(i)\n            }\n        }\n        t = Base64._utf8_decode(t);\n        return t\n    },\n    _utf8_encode: function(e) {\n        e = e.replace(/rn/g, \"n\");\n        var t = \"\";\n        for (var n = 0; n < e.length; n++) {\n            var r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r)\n            } else if (r > 127 && r < 2048) {\n                t += String.fromCharCode(r >> 6 | 192);\n                t += String.fromCharCode(r & 63 | 128)\n            } else {\n                t += String.fromCharCode(r >> 12 | 224);\n                t += String.fromCharCode(r >> 6 & 63 | 128);\n                t += String.fromCharCode(r & 63 | 128)\n            }\n        }\n        return t\n    },\n    _utf8_decode: function(e) {\n        var t = \"\";\n        var n = 0;\n        var r, c2;\n        while (n < e.length) {\n            r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r);\n                n++\n            } else if (r > 191 && r < 224) {\n                c2 = e.charCodeAt(n + 1);\n                t += String.fromCharCode((r & 31) << 6 | c2 & 63);\n                n += 2\n            } else {\n                c2 = e.charCodeAt(n + 1);\n                c3 = e.charCodeAt(n + 2);\n                t += String.fromCharCode((r & 15) << 12 | (c2 & 63) << 6 | c3 & 63);\n                n += 3\n            }\n        }\n        return t\n    }\n};\nvar json_str = Base64.decode(msg.payload.payload);\nvar json_obj = JSON.parse(json_str);\nreturn {\"value\":json_obj.value};", 
+        "id": "6a4b350c.5e811c", 
+        "name": "Base64DecodeToValueJSON", 
+        "noerr": 0, 
+        "outputs": 1, 
+        "type": "function", 
+        "wires": [
+            [
+                "94752a7a.e85bd8"
+            ]
+        ], 
+        "x": 520.1781234741211, 
+        "y": 537.4639711380005, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "active": false, 
+        "complete": "false", 
+        "console": "false", 
+        "id": "7b939386.36431c", 
+        "name": "", 
+        "type": "debug", 
+        "wires": [], 
+        "x": 969.9917526245117, 
+        "y": 584.8415956497192, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "crontab": "", 
+        "id": "76941924.0f9468", 
+        "name": "Add To Parking Time", 
+        "once": false, 
+        "payload": "", 
+        "payloadType": "date", 
+        "repeat": "", 
+        "topic": "", 
+        "type": "inject", 
+        "wires": [
+            [
+                "410202cb.7cc68c"
+            ]
+        ], 
+        "x": 221.84908294677734, 
+        "y": 692.1274843215942, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "active": false, 
+        "complete": "false", 
+        "console": "false", 
+        "id": "fc84ae05.1d0ff", 
+        "name": "", 
+        "type": "debug", 
+        "wires": [], 
+        "x": 968.547492980957, 
+        "y": 341.5400037765503, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "crontab": "", 
+        "id": "7a7b5e0c.fd2ac", 
+        "name": "Start 60 second Parking Test", 
+        "once": false, 
+        "payload": "{\"timestamp\": \"Thu Feb 16 2017 16:29:22 GMT-0600 (CST)\", \"meterid\": \"PARKING_METER_ID_GOES_HERE\", \"parking_time\": \"60\"}", 
+        "payloadType": "json", 
+        "repeat": "", 
+        "topic": "", 
+        "type": "inject", 
+        "wires": [
+            [
+                "5f35f814.0a7d78"
+            ]
+        ], 
+        "x": 177.06338500976562, 
+        "y": 478.57172298431396, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "func": "// Endpoint Name\nvar endpoint_name = \"MBED_ENDPOINT_NAME_GOES_HERE\";\n\n// skew factor of time between webapp and K64F (example: web app 1 second == 0.75 second on K64F)\nvar skew_factor = 1.0;\n\n// fudge \"n\" seconds delay\nvar fudge_secs = 1;\n\n// Base64 Support\nvar Base64 = {\n    _keyStr: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\",\n    encode: function(e) {\n        var t = \"\";\n        var n, r, i, s, o, u, a;\n        var f = 0;\n        e = Base64._utf8_encode(e);\n        while (f < e.length) {\n            n = e.charCodeAt(f++);\n            r = e.charCodeAt(f++);\n            i = e.charCodeAt(f++);\n            s = n >> 2;\n            o = (n & 3) << 4 | r >> 4;\n            u = (r & 15) << 2 | i >> 6;\n            a = i & 63;\n            if (isNaN(r)) {\n                u = a = 64;\n            } else if (isNaN(i)) {\n                a = 64;\n            }\n            t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a);\n        }\n        return t;\n    },\n    decode: function(e) {\n        var t = \"\";\n        var n, r, i;\n        var s, o, u, a;\n        var f = 0;\n        e = e.replace(/[^A-Za-z0-9+/=]/g, \"\");\n        while (f < e.length) {\n            s = this._keyStr.indexOf(e.charAt(f++));\n            o = this._keyStr.indexOf(e.charAt(f++));\n            u = this._keyStr.indexOf(e.charAt(f++));\n            a = this._keyStr.indexOf(e.charAt(f++));\n            n = s << 2 | o >> 4;\n            r = (o & 15) << 4 | u >> 2;\n            i = (u & 3) << 6 | a;\n            t = t + String.fromCharCode(n);\n            if (u != 64) {\n                t = t + String.fromCharCode(r);\n            }\n            if (a != 64) {\n                t = t + String.fromCharCode(i);\n            }\n        }\n        t = Base64._utf8_decode(t);\n        return t;\n    },\n    _utf8_encode: function(e) {\n        e = e.replace(/rn/g, \"n\");\n        var t = \"\";\n        for (var n = 0; n < e.length; n++) {\n            var r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r);\n            } else if (r > 127 && r < 2048) {\n                t += String.fromCharCode(r >> 6 | 192);\n                t += String.fromCharCode(r & 63 | 128);\n            } else {\n                t += String.fromCharCode(r >> 12 | 224);\n                t += String.fromCharCode(r >> 6 & 63 | 128);\n                t += String.fromCharCode(r & 63 | 128);\n            }\n        }\n        return t;\n    },\n    _utf8_decode: function(e) {\n        var t = \"\";\n        var n = 0;\n        var r, c2;\n        while (n < e.length) {\n            r = e.charCodeAt(n);\n            if (r < 128) {\n                t += String.fromCharCode(r);\n                n++\n            } else if (r > 191 && r < 224) {\n                c2 = e.charCodeAt(n + 1);\n                t += String.fromCharCode((r & 31) << 6 | c2 & 63);\n                n += 2\n            } else {\n                c2 = e.charCodeAt(n + 1);\n                c3 = e.charCodeAt(n + 2);\n                t += String.fromCharCode((r & 15) << 12 | (c2 & 63) << 6 | c3 & 63);\n                n += 3\n            }\n        }\n        return t\n    }\n};\n\n// convert the input string to a JSON object\nvar input_json = JSON.parse(msg.payload);\n\n// get the parking meter time\nvar input_parking_time = Number(input_json.parking_time);\n\n// get the timestamp as well\nvar parking_timestamp = Date.parse(input_json.timestamp);\n\n// account for skew time differences between the web app and the K64F...\nvar skew_time_ms = ((input_parking_time * (1.0 - skew_factor)) + fudge_secs) * 1000;\nparking_timestamp -= skew_time_ms;\n\n// create the command JSON\nvar parking_time_json = \"{\\\"value\\\":\";\nvar parking_time_json_1 = parking_time_json.concat(input_parking_time);\nvar parking_time_json_2 = parking_time_json_1.concat(\",\\\"ts\\\":\\\"\");\nvar parking_time_json_3 = parking_time_json_2.concat(parking_timestamp);\nvar parking_time_json_4 = parking_time_json_3.concat(\"\\\",\\\"cmd\\\":\\\"set\\\",\\\"auth\\\":\\\"arm1234\\\"}\");\nvar parking_time_json_b64 = Base64.encode(parking_time_json_4);\nvar payload = \"{ \\\"resourceId\\\":\\\"100/0/1\\\", \\\"payload\\\":\\\"\";\nvar payload_1 = payload.concat(parking_time_json_b64);\nvar payload_2 = payload_1.concat(\"\\\", \\\"deviceId\\\":\\\"\");\nvar payload_3 = payload_2.concat(endpoint_name);\nvar payload_4 = payload_3.concat(\"\\\", \\\"method\\\":\\\"PUT\\\" }\");\n\n// initialize our message as an empty one\nmsg = {};\n\n// assign and return the JSON\nmsg.payload = payload_4;\nreturn msg;", 
+        "id": "8bf3d9dd.67ec78", 
+        "name": "Create Parking Time JSON", 
+        "noerr": 0, 
+        "outputs": 1, 
+        "type": "function", 
+        "wires": [
+            [
+                "606db714.51b018", 
+                "fc84ae05.1d0ff"
+            ]
+        ], 
+        "x": 607.3613433837891, 
+        "y": 398.68307876586914, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "allApplications": "", 
+        "allCommands": "", 
+        "allDeviceTypes": "", 
+        "allDevices": false, 
+        "allEvents": false, 
+        "allFormats": "", 
+        "apiKey": "c088c9cd.20fee8", 
+        "applicationId": "", 
+        "authentication": "apiKey", 
+        "commandType": "start", 
+        "deviceId": "PARKING_METER_ID_GOES_HERE", 
+        "deviceType": "bridge", 
+        "eventType": "start", 
+        "format": "json", 
+        "id": "94ad5ad1.a61738", 
+        "inputType": "cmd", 
+        "name": "ARM Marketing Bridge", 
+        "qos": 0, 
+        "service": "registered", 
+        "type": "ibmiot in", 
+        "wires": [
+            []
+        ], 
+        "x": 142.73006439208984, 
+        "y": 396.55588150024414, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "func": "var str_payload = JSON.stringify(msg.payload);\nmsg = {};\nmsg.payload = str_payload;\nreturn msg;", 
+        "id": "5f35f814.0a7d78", 
+        "name": "Convert JSON Object to JSON String", 
+        "noerr": 0, 
+        "outputs": 1, 
+        "type": "function", 
+        "wires": [
+            [
+                "8bf3d9dd.67ec78"
+            ]
+        ], 
+        "x": 313.60308837890625, 
+        "y": 433.159029006958, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "field": "payload", 
+        "fieldType": "msg", 
+        "format": "json", 
+        "id": "af92be5e.ce3f5", 
+        "name": "Beacon ON", 
+        "syntax": "mustache", 
+        "template": "{ \"resourceId\":\"200/0/1\", \"payload\":\"MQ==\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }", 
+        "type": "template", 
+        "wires": [
+            [
+                "606db714.51b018"
+            ]
+        ], 
+        "x": 554.4443664550781, 
+        "y": 250.00001525878906, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "field": "payload", 
+        "fieldType": "msg", 
+        "format": "json", 
+        "id": "4edd945e.bb279c", 
+        "name": "Beacon OFF", 
+        "syntax": "mustache", 
+        "template": "{ \"resourceId\":\"200/0/1\", \"payload\":\"MA==\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }", 
+        "type": "template", 
+        "wires": [
+            [
+                "606db714.51b018"
+            ]
+        ], 
+        "x": 554.7021713256836, 
+        "y": 161.58731746673584, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "crontab": "", 
+        "id": "8a2d2773.9d47d8", 
+        "name": "Set FREE PARKING", 
+        "once": false, 
+        "payload": "", 
+        "payloadType": "date", 
+        "repeat": "", 
+        "topic": "", 
+        "type": "inject", 
+        "wires": [
+            [
+                "4edd945e.bb279c"
+            ]
+        ], 
+        "x": 130.21803665161133, 
+        "y": 162.83374691009521, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "crontab": "", 
+        "id": "f0cf54eb.fc7a68", 
+        "name": "Set PAID PARKING", 
+        "once": false, 
+        "payload": "", 
+        "payloadType": "date", 
+        "repeat": "", 
+        "topic": "", 
+        "type": "inject", 
+        "wires": [
+            [
+                "af92be5e.ce3f5"
+            ]
+        ], 
+        "x": 124.82107543945312, 
+        "y": 240.99233627319336, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "beb602cb.0441c", 
+        "method": "post", 
+        "name": "Free Parking", 
+        "swaggerDoc": "", 
+        "type": "http in", 
+        "url": "/freePARKING_METER_ID_GOES_HERE", 
+        "wires": [
+            [
+                "ebb9a5cd.5f8d98", 
+                "4edd945e.bb279c"
+            ]
+        ], 
+        "x": 110.05145645141602, 
+        "y": 123.50400352478027, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "ebb9a5cd.5f8d98", 
+        "name": "", 
+        "type": "http response", 
+        "wires": [], 
+        "x": 421.4959144592285, 
+        "y": 122.69844722747803, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "bab6b524.516568", 
+        "method": "post", 
+        "name": "Paid Parking", 
+        "swaggerDoc": "", 
+        "type": "http in", 
+        "url": "/paidPARKING_METER_ID_GOES_HERE", 
+        "wires": [
+            [
+                "1ac9b75b.057139", 
+                "af92be5e.ce3f5"
+            ]
+        ], 
+        "x": 107.10704803466797, 
+        "y": 201.2540044784546, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "1ac9b75b.057139", 
+        "name": "", 
+        "type": "http response", 
+        "wires": [], 
+        "x": 418.88483810424805, 
+        "y": 201.67067432403564, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "80a99045.64ba4", 
+        "method": "post", 
+        "name": "Start Parking", 
+        "swaggerDoc": "", 
+        "type": "http in", 
+        "url": "/startPARKING_METER_ID_GOES_HERE", 
+        "wires": [
+            [
+                "48c49046.c4a37", 
+                "8bf3d9dd.67ec78"
+            ]
+        ], 
+        "x": 111.77367401123047, 
+        "y": 356.2539691925049, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "48c49046.c4a37", 
+        "name": "", 
+        "type": "http response", 
+        "wires": [], 
+        "x": 422.2181396484375, 
+        "y": 354.67065238952637, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "field": "payload", 
+        "fieldType": "msg", 
+        "format": "json", 
+        "id": "97b6145f.178a88", 
+        "name": "Beacon OFF PAID PARKING", 
+        "syntax": "mustache", 
+        "template": "{ \"resourceId\":\"200/0/1\", \"payload\":\"Mg==\", \"deviceId\":\"MBED_ENDPOINT_NAME_GOES_HERE\", \"method\":\"PUT\" }", 
+        "type": "template", 
+        "wires": [
+            [
+                "606db714.51b018"
+            ]
+        ], 
+        "x": 605.7736206054688, 
+        "y": 319.3651313781738, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "crontab": "", 
+        "id": "fa3f1b61.cabb78", 
+        "name": "Set Beacon OFF PAID PARKING", 
+        "once": false, 
+        "payload": "", 
+        "payloadType": "date", 
+        "repeat": "", 
+        "topic": "", 
+        "type": "inject", 
+        "wires": [
+            [
+                "97b6145f.178a88"
+            ]
+        ], 
+        "x": 166.1503143310547, 
+        "y": 317.02409744262695, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "2ac4d485.7b06bc", 
+        "method": "post", 
+        "name": "Beacon OFF Paid Parking", 
+        "swaggerDoc": "", 
+        "type": "http in", 
+        "url": "/nobeaconPARKING_METER_ID_GOES_HERE", 
+        "wires": [
+            [
+                "ab50e503.7f7bb8", 
+                "97b6145f.178a88"
+            ]
+        ], 
+        "x": 146.21408081054688, 
+        "y": 279.5079803466797, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "id": "ab50e503.7f7bb8", 
+        "name": "", 
+        "type": "http response", 
+        "wires": [], 
+        "x": 421.32521057128906, 
+        "y": 276.59131813049316, 
+        "z": "1268ff4a.379261"
+    }, 
+    {
+        "appId": "", 
+        "cleansession": true, 
+        "id": "c088c9cd.20fee8", 
+        "keepalive": "60", 
+        "name": "ARM Marketing ", 
+        "shared": false, 
+        "type": "ibmiot", 
+        "z": ""
+    }
+]
