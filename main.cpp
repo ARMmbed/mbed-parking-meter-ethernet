@@ -19,16 +19,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Enable v2 of the endpoint
+#define ENABLE_V2_RESOURCES		    false
 
-// CUSTOMIZE ME: Define the core Device Types, Firmware, Hardware, Software information
-#define ENABLE_DEVICE_MANAGER		true				// true - enable, false - disable
-#define MY_DEVICE_MFG			"NXP"
-#define MY_DEVICE_TYPE			"parking-meter"
-#define MY_DEVICE_MODEL			"K64F"
-#define MY_DEVICE_SERIAL 		"0123456789"
-#define MY_FIRMWARE_VERSION		"1.0.0"
-#define MY_HARDWARE_VERSION		"1.0.0"
-#define MY_SOFTWARE_VERSION		"1.0.0"
+// V2 Resources
+#if ENABLE_V2_RESOURCES
+	// CUSTOMIZE ME: Define the core Device Types, Firmware, Hardware, Software information
+	#define ENABLE_DEVICE_MANAGER	false				// true - enable, false - disable
+	#define MY_DEVICE_MFG			"ARM/NXP"
+	#define MY_DEVICE_TYPE			"parking-meter-v2"
+	#define MY_DEVICE_MODEL			"K64F"
+	#define MY_DEVICE_SERIAL 		"0123456789"
+	#define MY_FIRMWARE_VERSION		"2.0.0"
+	#define MY_HARDWARE_VERSION		"2.0.0"
+	#define MY_SOFTWARE_VERSION		"2.0.0"
+#else
+	// CUSTOMIZE ME: Define the core Device Types, Firmware, Hardware, Software information
+	#define ENABLE_DEVICE_MANAGER	false				// true - enable, false - disable
+	#define MY_DEVICE_MFG			"NXP"
+	#define MY_DEVICE_TYPE			"parking-meter"
+	#define MY_DEVICE_MODEL			"K64F"
+	#define MY_DEVICE_SERIAL 		"0123456789"
+	#define MY_FIRMWARE_VERSION		"1.0.0"
+	#define MY_HARDWARE_VERSION		"1.0.0"
+	#define MY_SOFTWARE_VERSION		"1.0.0"
+#endif
 
 // Passphrase to supply for data management authentication
 #define MY_DM_PASSPHRASE		"arm1234"
@@ -56,6 +71,7 @@ Logger logger(&pc);
 
 // Our Device Management Authenticator (trivial passphrase authenticator used)
 #include "mbed-connector-interface/PassphraseAuthenticator.h"
+PassphraseAuthenticator authenticator(&logger,MY_DM_PASSPHRASE);
 
 // Our Device Management Responder
 #include "mbed-connector-interface/DeviceManagementResponder.h"
@@ -74,6 +90,17 @@ HourGlassResource hourglass(&logger,"100","1",true);
 // BLE Beacon Switch Resource
 #include "mbed-endpoint-resources/BeaconSwitchResource.h"
 BeaconSwitchResource beacon_switch(&logger,"200","1");
+
+// V2 Resources
+#if ENABLE_V2_RESOURCES
+	// V2: Camera
+	#include "mbed-endpoint-resources/CameraResource.h"
+	CameraResource camera(&logger,"300","1",true,&authenticator);	// observation made when POST is issued to take a new picture...
+	
+	// V2: RangeFinder
+	#include "mbed-endpoint-resources/RangeFinderResource.h"
+	RangeFinderResource range_finder(&logger,"400","1",true);		// range observations made
+#endif // ENABLE_V2_RESOURCES
 
 // called from the Endpoint::start() below to create resources and the endpoint internals...
 Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
@@ -95,8 +122,14 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
                    
         // Add my specific physical dynamic resources...
         .addResource(&lcd)
-        .addResource(&hourglass,(bool)false) // on-demand observations...
-        .addResource(&beacon_switch)					
+        .addResource(&hourglass,(bool)false) 			// on-demand observations...
+        .addResource(&beacon_switch)		
+
+// V2 Resources        
+#if ENABLE_V2_RESOURCES
+		.addResource(&camera,(bool)false)				// observation issued after POST operation completes...
+		.addResource(&range_finder,(bool)false)			// observation issued upon motion detection...
+#endif			
                    
         // finalize the configuration...
         .build();
@@ -118,8 +151,7 @@ int main()
     DeviceManager *device_manager = NULL;
     if (ENABLE_DEVICE_MANAGER) {
 	    // Allocate the Device Management Components
-	    PassphraseAuthenticator *authenticator = new PassphraseAuthenticator(&logger,MY_DM_PASSPHRASE);
-	    DeviceManagementResponder *dm_processor = new DeviceManagementResponder(&logger,authenticator);
+	    DeviceManagementResponder *dm_processor = new DeviceManagementResponder(&logger,&authenticator);
 	    device_manager = new DeviceManager(&logger,dm_processor,MY_DEVICE_MFG,MY_DEVICE_TYPE,MY_DEVICE_MODEL,MY_DEVICE_SERIAL,MY_FIRMWARE_VERSION,MY_HARDWARE_VERSION,MY_SOFTWARE_VERSION);
 		
 	    // Register the default Device Management Responders

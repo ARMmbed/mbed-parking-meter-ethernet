@@ -322,7 +322,7 @@ private:
         
         // difference in time
         time_t diff = (time_t)((our_seconds_since_epoch - web_app_seconds_since_epoch)/1000);
-        if (diff < 0 || diff > MAX_TIME_SKEW) {
+        if (diff == 0 || diff > MAX_TIME_SKEW) {
             // set the diff to the max allowed
             diff = (time_t)MAX_TIME_SKEW;
             
