@@ -37,7 +37,6 @@ static RangeFinder __range_finder(D2, 10, 5800.0, 100000);
 
 // Values of our resource
 #define NO_OBJECT_DETECTED          "0"     // no object detected
-#define OBJECT_DETECTED             "1"     // object detected
 
 // default trigger range 
 #define DEFAULT_TRIGGER_RANGE_M     1       // 1 meter
@@ -66,6 +65,7 @@ private:
     float           m_trigger_range;
     string          m_range_str;
     bool            m_perform_observation;
+    int				m_counter;
 
 public:
     /**
@@ -81,6 +81,7 @@ public:
         
         // initialize the range value
         this->m_range = -1.0;
+        this->m_counter = 0;
         this->m_range_str = NO_OBJECT_DETECTED;
         
         // default trigger range
@@ -130,8 +131,21 @@ public:
         
         // set our value and create an observation event
         if (this->m_perform_observation == true && __observation_latch == true) {
+        	// DEBUG
+        	this->logger()->log("RangeFinderResource: Sending observation....");
             this->observe();
+
+            // reset latch
+            this->logger()->log("RangeFinderResource: Latching until we are done with the camera...");
             __observation_latch = false;
+        }
+        else if (this->m_perform_observation == true) {
+        	// latch locked... not observing...
+        	this->logger()->log("RangeFinderResource: NOT observing... latch still locked...");
+        }
+        else {
+        	// DEBUG nothing to observe
+        	//this->logger()->log("RangeFinderResource: Nothing to observe (OK)");
         }
     }
     
@@ -163,7 +177,11 @@ private:
         else {
             // object detected in range.. 
             this->logger()->log("RangeFinderResource: Object detected. Distance: %.1f m",this->m_range);
-            this->m_range_str = OBJECT_DETECTED;
+            char buf[10];
+            memset(buf,0,10);
+            ++this->m_counter;
+            sprintf(buf,"%d",this->m_counter);
+            this->m_range_str = string(buf);
             this->m_perform_observation = true;
         }
     }

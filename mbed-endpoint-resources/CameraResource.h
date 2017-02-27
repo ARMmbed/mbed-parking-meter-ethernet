@@ -33,9 +33,10 @@ static CameraOV528 __camera(A3,A2);
 // Base64 encoder/decoder
 #include "Base64.h"
 
-// maximum supported image size
-#define MAX_CAMERA_BUFFER_SIZE              1660         // ~1.7k jpeg for image resolution 160x120
-#define MAX_MESSAGE_SIZE                    1023         // CoAP limits to 1024 - max message length 
+// image tunables
+#define MAX_CAMERA_BUFFER_SIZE              2048         // ~1.7k jpeg for image resolution 160x120
+#define MAX_MESSAGE_SIZE                    1024         // CoAP limits to 1024 - max message length
+#define CLIP_LENGTH							512			 // Clip length to clip image such that the CoAP message is small enough...
 
 // RangeFinder Observation Latch reset
 extern "C" void reset_observation_latch();
@@ -163,11 +164,11 @@ private:
             // ability to clip part of the image...    
             int clip_length = this->m_camera_buffer_length;
             if (clip_length > MAX_MESSAGE_SIZE) {
-                // Base64 will add some to the length... so trim a bit more back (256 bytes)
-                clip_length = MAX_MESSAGE_SIZE - 256;
+                // Base64 will add some to the length... so trim a bit more back (CLIP_LENGTH bytes)
+                clip_length = MAX_MESSAGE_SIZE - CLIP_LENGTH;
                 
                 // DEBUG
-                clip_length = 50;
+                //clip_length -= 172;
                 
                 // DEBUG
                 this->logger()->log("CameraResource: Image length: %d too big for CoAP... trimming to: %d bytes...",this->m_camera_buffer_length,clip_length);
@@ -196,3 +197,4 @@ private:
 };
 
 #endif // __CAMERA_RESOURCE_H__
+
