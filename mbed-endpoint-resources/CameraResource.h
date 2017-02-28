@@ -33,10 +33,13 @@ static CameraOV528 __camera(A3,A2);
 // Base64 encoder/decoder
 #include "Base64.h"
 
+// Gzip utils
+#include "gzip_utils.h"
+
 // image tunables
-#define MAX_CAMERA_BUFFER_SIZE              2048         // ~1.7k jpeg for image resolution 160x120
+#define MAX_CAMERA_BUFFER_SIZE              3096         // ~2.7k jpeg for image resolution 160x120
 #define MAX_MESSAGE_SIZE                    1024         // CoAP limits to 1024 - max message length
-#define CLIP_LENGTH							512			 // Clip length to clip image such that the CoAP message is small enough...
+#define CLIP_LENGTH			    512		 // Clip length to clip image such that the CoAP message is small enough...
 
 // RangeFinder Observation Latch reset
 extern "C" void reset_observation_latch();
@@ -90,11 +93,11 @@ public:
             this->take_picture();
             
             // encode the image
-            this->logger()->log("CameraResource: Encoding picture...");
+            this->logger()->log("CameraResource: Base64 encoding picture...");
             this->encode_image();
             
             // create the observation
-            this->logger()->log("CameraResource: Creating observation...");
+            this->logger()->log("CameraResource: Creating CoAP observation...");
             this->observe();
             
             // now that the image has been observed... release the RangeFinder observation latch
@@ -138,9 +141,14 @@ private:
     
     // transfer the camera picture
     void transfer_picture() {
+	uint8_t tmp_buffer[MAX_CAMERA_BUFFER_SIZE+1];
+
         // clear the buffer
         memset(this->m_camera_buffer,0,MAX_CAMERA_BUFFER_SIZE+1);
         this->m_camera_buffer_length = 0;
+
+	// clear our tmp buffer
+	memset(tmp_buffer,0,MAX_CAMERA_BUFFER_SIZE+1);
         
         // get the buffer size - clip to the maximum buffer size available...
         uint32_t buffer_size = __camera.get_picture_size();
@@ -151,7 +159,26 @@ private:
         // read in the picture...
         if (buffer_size > 0) {
             // read in the image
-            this->m_camera_buffer_length = __camera.read_picture_data(this->m_camera_buffer,buffer_size);
+            int tmp_buffer_length = __camera.read_picture_data(tmp_buffer,buffer_size);
+
+	    // DEBUG
+	    this->logger()->log("CameraResource: RAW jpeg camera buffer size: %d (ret: %d)",buffer_size,tmp_buffer_length);
+
+	    // now gzip it
+	    unsigned long gzip_length = MAX_CAMERA_BUFFER_SIZE;
+	    int gzip_status = gzip((unsigned char *)this->m_camera_buffer,&gzip_length,(unsigned char *)tmp_buffer,(unsigned long)tmp_buffer_length);
+	    if (gzip_status == Z_OK) {
+		this->m_camera_buffer_length = (uint32_t)gzip_length;
+
+		// DEBUG
+		this->logger()->log("CameraResource: GZIP camera buffer size: %d",this->m_camera_buffer_length);
+	    }
+ 	    else {
+		// ERROR
+		this->m_camera_buffer_length = 0;
+		memset(this->m_camera_buffer,0,MAX_CAMERA_BUFFER_SIZE+1);
+		this->logger()->log("CameraResource: ERROR GZIP failed: %d",gzip_status);
+	    }
         }
     }
     
@@ -166,9 +193,6 @@ private:
             if (clip_length > MAX_MESSAGE_SIZE) {
                 // Base64 will add some to the length... so trim a bit more back (CLIP_LENGTH bytes)
                 clip_length = MAX_MESSAGE_SIZE - CLIP_LENGTH;
-                
-                // DEBUG
-                //clip_length -= 172;
                 
                 // DEBUG
                 this->logger()->log("CameraResource: Image length: %d too big for CoAP... trimming to: %d bytes...",this->m_camera_buffer_length,clip_length);
