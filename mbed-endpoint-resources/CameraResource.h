@@ -40,7 +40,7 @@ void *_camera_instance = NULL;
 #include "gzip_utils.h"
 
 // TUNE: buffer sizes
-#define MAX_CAMERA_BUFFER_SIZE              2048         // ~1.5k jpeg for image resolution 160x120... plus some wiggle room...
+#define MAX_CAMERA_BUFFER_SIZE              5192         // ~5k jpeg for image resolution 160x120... plus some wiggle room...
 #define MAX_MESSAGE_SIZE                    1024         // CoAP limits to 1024 - max message length
 #define PREFERRED_MESSAGE_LEN				225	         // preferred "chunk" size for a single observation
 
@@ -71,6 +71,9 @@ extern "C" void reset_observation_latch();
 
 // observation processor forward reference
 extern "C" void _process_observations(const void *args);
+
+// temp buffer
+static uint8_t tmp_buffer[MAX_CAMERA_BUFFER_SIZE+1];
 
 /** CameraResource class
  */
@@ -289,8 +292,6 @@ private:
     
     // transfer the camera picture
     void transfer_picture() {
-    	uint8_t tmp_buffer[MAX_CAMERA_BUFFER_SIZE+1];
-
         // clear the buffer
         memset(this->m_camera_buffer,0,MAX_CAMERA_BUFFER_SIZE+1);
         this->m_camera_buffer_length = 0;
