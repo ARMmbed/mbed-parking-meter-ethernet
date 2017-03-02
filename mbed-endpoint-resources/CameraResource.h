@@ -242,7 +242,7 @@ private:
     // split our string into a vector<string> each with a specific length
     vector<string> split_string(string str,int length) {
     	vector<string> strings;
-    	for (int i=0;i<str.length();i+=length) {
+    	for (int i=0;i<(int)str.length();i+=(int)length) {
     		strings.push_back(str.substr(i,length));
     	}
     	return strings;
@@ -314,12 +314,12 @@ private:
 			this->logger()->log("CameraResource: RAW jpeg camera buffer size: %d (ret: %d)",buffer_size,tmp_buffer_length);
 
 			// DEBUG
-			char *image_type = "JPEG";
+			char *image_type = (char *)"JPEG";
 
 			// check if we want to gzip up the jpeg...
 			if (DO_GZIP_IMAGE) {
 				// gzip the image
-				image_type = "GZIP_JPEG";
+				image_type = (char *)"GZIP_JPEG";
 				unsigned long gzip_length = MAX_CAMERA_BUFFER_SIZE;
 				int gzip_status = gzip((unsigned char *)this->m_camera_buffer,&gzip_length,(unsigned char *)tmp_buffer,(unsigned long)tmp_buffer_length);
 				if (gzip_status == Z_OK) {

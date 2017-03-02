@@ -26,6 +26,9 @@
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
 
+// JSON parser
+#include "MbedJSONValue.h"
+
 // String buffer for the LCD log line
 #define LCD_BUFFER_LENGTH       24
 static char __log[LCD_BUFFER_LENGTH+1];
@@ -38,38 +41,103 @@ static char __bar[NUM_SLOTS+1];
 #include "C12832.h"
 static C12832 __lcd(D11, D13, D12, D7, D10);
 
+#if ENABLE_V2_RESOURCES
+extern Logger logger;
+// RED LED on/off
+extern "C" void parking_status_led_red(bool on) {
+	if (on) {
+		logger.log("RED LED ON");
+	}
+	else {
+		logger.log("RED LED OFF");
+	}
+}
+extern "C" void parking_status_led_yellow(bool on) {
+	if (on) {
+		logger.log("YELLOW LED ON");
+	}
+	else {
+		logger.log("YELLOW LED OFF");
+	}
+}
+extern "C" void parking_status_led_green(bool on) {
+	if (on) {
+		logger.log("GREEN LED ON");
+	}
+	else {
+		logger.log("GREEN LED OFF");
+	}
+}
+extern "C" void parking_status_led_blue(bool on) {
+	if (on) {
+		logger.log("BLUE LED ON");
+	}
+	else {
+		logger.log("BLUE LED OFF");
+	}
+}
+#else
 // multi-color LED (must disable when using pyOCD... D8 is the debugging line...)
 static PwmOut r (D5);
 //static PwmOut b (D8);
 static PwmOut g (D9);
 
 // color LED RED
-extern "C" void parking_status_led_red() {
-    r = 0.5;
-    //b = 1.0;
-    g = 1.0;
+extern "C" void parking_status_led_red(bool on) {
+	if (on) {
+		r = 0.5;
+		//b = 1.0;
+		g = 1.0;
+	}
+	else {
+		r = 1.0;
+		//b = 1.0;
+		g = 1.0;
+	}
 }
 
 // color LED DEFAULT
-extern "C" void parking_status_led_yellow() {
-    r = 0.3;
-    //b = 1.0;
-    g = 0.3;
+extern "C" void parking_status_led_yellow(bool on) {
+	if (on) {
+		r = 0.3;
+		//b = 1.0;
+		g = 0.3;
+	}
+	else {
+		r = 1.0;
+		//b = 1.0;
+		g = 1.0;
+	}
 }
 
 // color LED GREEN
-extern "C" void parking_status_led_green() {
-    r = 1.0;
-    //b = 1.0;
-    g = 0.5;
+extern "C" void parking_status_led_green(bool on) {
+	if (on) {
+		r = 1.0;
+		//b = 1.0;
+		g = 0.5;
+	}
+	else {
+		r = 1.0;
+		//b = 1.0;
+		g = 1.0;
+	}
 }
 
 // color LED GREEN
-extern "C" void parking_status_led_blue() {
-    r = 1.0;
-    //b = 0.5;
-    g = 1.0;
+extern "C" void parking_status_led_blue(bool on) {
+    if (on) {
+		r = 1.0;
+		//b = 0.5;
+		g = 1.0;
+    }
+    else {
+    	r = 1.0;
+		//b = 0.5;
+		g = 1.0;
+    }
 }
+#endif // ENABLE_V2_RESOURCES
 
 // initialize the log buffer
 extern "C" void init_log_buffer() 
@@ -134,7 +202,7 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
         parking_meter_log_status((char *)"Remain: NONE            ");
         
         // LED goes red
-        parking_status_led_red();
+        parking_status_led_red(true);
     }
     else {
         // remaining time
@@ -149,11 +217,11 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
         // if the remaining time is less than 25% of the total, color the led YELLOW
         if (calculate_percent_remaining(value,fill_value) <= 25.0) {
             // running out of time!... maybe send a SMS...
-            parking_status_led_yellow();
+            parking_status_led_yellow(true);
         }
         else {
             // parking time remaining is OK...
-            parking_status_led_green();
+            parking_status_led_green(true);
         }
     }
 }
@@ -200,10 +268,43 @@ public:
     
     /**
     Put to write to the LCD (formatting and "\r\n" chars must be part of the text in the put() command)
+    Format: {"cmd":"lcd|led","value":"text|red|blue|green","state":0|1}
     */
     virtual void put(const string value) {
-        this->logger()->log("C12832 LCD: PUT(%s) called",value.c_str());
-        parking_meter_log_status((char *)value.c_str());
+    	// parse the JSON
+    	MbedJSONValue parsed;
+    	parse(parsed,value.c_str());
+
+    	// get the command type
+    	string cmd = parsed["cmd"].get<string>();
+    	string val = parsed["value"].get<string>();
+
+    	// act on the command
+    	if (cmd.compare(string("lcd")) == 0) {
+    		// write to the LCD
+    		this->logger()->log("C12832 LCD: PUT(%s) called",val.c_str());
+    		parking_meter_log_status((char *)val.c_str());
+    	}
+    	if (cmd.compare(string("led")) == 0) {
+    		// get the state value
+    		int state = parsed["state"].get<int>();
+    		bool bool_state = false;
+    		if (state) bool_state = true;
+
+    		// toggle based on state
+			if (val.compare(string("red")) == 0) {
+				parking_status_led_red(bool_state);
+			}
+			if (val.compare(string("yellow")) == 0) {
+				parking_status_led_yellow(bool_state);
+			}
+			if (val.compare(string("green")) == 0) {
+				parking_status_led_green(bool_state);
+			}
+			if (val.compare(string("blue")) == 0) {
+				parking_status_led_blue(bool_state);
+			}
+    	}
     }
 };
 

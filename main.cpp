@@ -19,6 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 // Enable v2 of the endpoint
 #define ENABLE_V2_RESOURCES		    false
 
@@ -97,9 +98,9 @@ BeaconSwitchResource beacon_switch(&logger,"200","1");
 	#include "mbed-endpoint-resources/CameraResource.h"
 	CameraResource camera(&logger,"300","1",true,&authenticator);	// observation made when POST is issued to take a new picture...
 	
-	// V2: RangeFinder
-	#include "mbed-endpoint-resources/RangeFinderResource.h"
-	RangeFinderResource range_finder(&logger,"400","1",true);		// range observations made
+	// V2: ParkingStallOccupancyDetectorResource
+	#include "mbed-endpoint-resources/ParkingStallOccupancyDetectorResource.h"
+	ParkingStallOccupancyDetectorResource occupancy_detector(&logger,"400","1",true);	// parking stall occupancy detector
 #endif // ENABLE_V2_RESOURCES
 
 // called from the Endpoint::start() below to create resources and the endpoint internals...
@@ -128,7 +129,7 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
 // V2 Resources        
 #if ENABLE_V2_RESOURCES
 		.addResource(&camera,(bool)false)				// observation issued after POST operation completes...
-		.addResource(&range_finder,(bool)false)			// observation issued upon motion detection...
+		.addResource(&occupancy_detector,(bool)false)	// observation issued upon motion detection...
 #endif			
                    
         // finalize the configuration...
