@@ -37,51 +37,73 @@ static char __log[LCD_BUFFER_LENGTH+1];
 #define NUM_SLOTS               20
 static char __bar[NUM_SLOTS+1];
 
+#if ENABLE_V2_RESOURCES
+// shield uses the
+
+// 4 LEDs used
+DigitalOut green_led(D7);
+DigitalOut blue_led(D6);
+DigitalOut yellow_led(D5);
+DigitalOut red_led(D4);
+
+// LCD
+#include "SB1602E.h"
+SB1602E __lcd(D14,D15);    //  SDA, SCL
+#else
 // Our mbed Application Shield LCD Device
 #include "C12832.h"
 static C12832 __lcd(D11, D13, D12, D7, D10);
+
+// multi-color LED (must disable when using pyOCD... D8 is the debugging line...)
+static PwmOut r (D5);
+//static PwmOut b (D8);
+static PwmOut g (D9);
+#endif
 
 #if ENABLE_V2_RESOURCES
 extern Logger logger;
 // RED LED on/off
 extern "C" void parking_status_led_red(bool on) {
 	if (on) {
-		logger.log("RED LED ON");
+		//logger.log("RED LED ON");
+		//red_led = 0;
 	}
 	else {
-		logger.log("RED LED OFF");
+		//logger.log("RED LED OFF");
+		//red_led = 1;
 	}
 }
 extern "C" void parking_status_led_yellow(bool on) {
 	if (on) {
-		logger.log("YELLOW LED ON");
+		//logger.log("YELLOW LED ON");
+		//yellow_led = 0;
 	}
 	else {
-		logger.log("YELLOW LED OFF");
+		//logger.log("YELLOW LED OFF");
+		//yellow_led = 1;
 	}
 }
 extern "C" void parking_status_led_green(bool on) {
 	if (on) {
-		logger.log("GREEN LED ON");
+		//logger.log("GREEN LED ON");
+		//green_led = 0;
 	}
 	else {
-		logger.log("GREEN LED OFF");
+		//logger.log("GREEN LED OFF");
+		//green_led = 1;
 	}
 }
 extern "C" void parking_status_led_blue(bool on) {
 	if (on) {
-		logger.log("BLUE LED ON");
+		//logger.log("BLUE LED ON");
+		//blue_led = 0;
 	}
 	else {
-		logger.log("BLUE LED OFF");
+		//logger.log("BLUE LED OFF");
+		//blue_led = 1;
 	}
 }
 #else
-// multi-color LED (must disable when using pyOCD... D8 is the debugging line...)
-static PwmOut r (D5);
-//static PwmOut b (D8);
-static PwmOut g (D9);
-
 // color LED RED
 extern "C" void parking_status_led_red(bool on) {
 	if (on) {
@@ -156,17 +178,29 @@ extern "C" void parking_meter_log_status(char *status)
         }
        init_log_buffer();
        for(int i=0;i<length;++i) __log[i] = status[i];
+#if ENABLE_V2_RESOURCES
+        __lcd.puts(1,(char *)__log);
+#else
         __lcd.locate(0,20);
         __lcd.printf(__log);
+#endif
     }
 }
 
 // Parking Meter Title
 extern "C" void write_parking_meter_title(char *fw)
 {
+#if ENABLE_V2_RESOURCES
+	__lcd.clear();
+	char buf[96];
+	memset(buf,0,96);
+	sprintf(buf,"Parking Meter FW_v%s\r",fw);
+	__lcd.puts(0,(char *)buf);
+#else
     //__lcd.cls();
     __lcd.locate(0,0);
     __lcd.printf("Parking Meter FW_v%s",fw);
+#endif
 }
 
 // calculate the percentage completed
@@ -195,6 +229,9 @@ extern "C" char *calculate_time_remaining_bar(int value,int fill_value)
 // Parking Meter Parking Time Stats Update
 extern "C" void update_parking_meter_stats(int value,int fill_value)
 {
+#if ENABLE_V2_RESOURCES
+	// XXX TO DO
+#else
     __lcd.locate(0,10);
     if (value <= 0) {
         // parking time expired
@@ -224,6 +261,7 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
             parking_status_led_green(true);
         }
     }
+#endif
 }
 
 // Parking Meter Beacon Status
@@ -253,8 +291,11 @@ public:
     @param res_name input the resource name
     @param observable input the resource is Observable (default: FALSE)
     */
-    LCDResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"C12832 LCD",M2MBase::GET_PUT_ALLOWED,observable) {
+    LCDResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"LCD",M2MBase::GET_PUT_ALLOWED,observable) {
        init_log_buffer();
+#if ENABLE_V2_RESOURCES
+       __lcd.contrast(0x35);
+#endif
     }
 
     /**
@@ -262,7 +303,7 @@ public:
     @returns string representing the current value of this resource
     */
     virtual string get() {
-        this->logger()->log("C12832 LCD: GET() called. Log buffer: %s",__log);
+        this->logger()->log("Log: %s",__log);
         return string(__log);
     }
     
@@ -282,7 +323,7 @@ public:
     	// act on the command
     	if (cmd.compare(string("lcd")) == 0) {
     		// write to the LCD
-    		this->logger()->log("C12832 LCD: PUT(%s) called",val.c_str());
+    		//this->logger()->log("PUT(%s) called",val.c_str());
     		parking_meter_log_status((char *)val.c_str());
     	}
     	if (cmd.compare(string("led")) == 0) {
