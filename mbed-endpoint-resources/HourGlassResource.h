@@ -51,7 +51,6 @@ static void *__instance = NULL;
 extern "C" void _decrementor(const void *args);
 
 // hook for turning the beacon on/off
-extern "C" void turn_beacon_on(void);
 extern "C" void turn_beacon_off(void);
 
 // Linkage to LCD Resource (for writing updates)
@@ -446,9 +445,6 @@ void _decrementor(const void *args) {
         me->observe();
         __expired = true;
         
-        // enable the beacon
-        turn_beacon_on();
-
         // set the LCD
         post_parking_available_to_lcd();
     }

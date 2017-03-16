@@ -29,6 +29,10 @@
 // JSON parser
 #include "MbedJSONValue.h"
 
+// hook for turning the beacon on/off
+extern "C" void turn_beacon_on(void);
+extern "C" void turn_beacon_off(void);
+
 #if ENABLE_V2_RESOURCES
 // Tunables for LCD
 #define LCD_BUFFER_LENGTH       16
@@ -227,6 +231,13 @@ extern "C" void clear_lcd() {
 
 // re-advertise availablility
 extern "C" void post_parking_available_to_lcd() {
+#if ENABLE_V2_OCCUPANCY_DETECTOR
+	// occupancy detector is enabled...
+#else
+    // enable the beacon
+    turn_beacon_on();
+#endif
+
 #if ENABLE_V2_RESOURCES
 	// wait a second
 	Thread::wait(1000);

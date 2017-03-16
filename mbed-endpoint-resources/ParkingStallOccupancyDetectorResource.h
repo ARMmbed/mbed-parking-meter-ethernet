@@ -32,6 +32,10 @@
 // JSON parsing support
 #include "MbedJSONValue.h"
 
+// hook for turning the beacon on/off
+extern "C" void turn_beacon_on(void);
+extern "C" void turn_beacon_off(void);
+
 // Seeed ultrasound range finder
 static RangeFinder __range_finder(D2, 10, 5800.0, 100000);
 
@@ -419,6 +423,9 @@ private:
 				// slot is now EMPTY
 				this->led_stall_empty();
 
+				// turn the BLE beacon off
+				turn_beacon_off();
+
 				// back to low-rez pinging
 				this->m_wait_time = WAIT_TIME;
 			}
@@ -439,6 +446,9 @@ private:
 				this->m_state = STALL_OCCUPIED;
 				this->m_movement = NO_MOVEMENT;
 				this->m_parking_stall_state_str = this->create_status_string(this->m_state);
+
+				// turn the BLE beacon on
+				turn_beacon_on();
 
 				// generate an observation
 				this->enable_observation();
@@ -513,6 +523,9 @@ private:
 
 			// slot is now EMPTY
 			this->led_stall_empty();
+
+			// turn the BLE beacon off
+			turn_beacon_off();
 
 			// back to low-rez pinging
 			this->m_wait_time = WAIT_TIME;

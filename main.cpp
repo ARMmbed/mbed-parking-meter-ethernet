@@ -28,12 +28,17 @@
 	// CUSTOMIZE ME: Define the core Device Types, Firmware, Hardware, Software information
 	#define ENABLE_DEVICE_MANAGER	false				// true - enable, false - disable
 	#define MY_DEVICE_MFG			"ARM/NXP"
+#if ENABLE_V2_COMPAT
+	#define MY_DEVICE_TYPE			"parking-meter"
+#else
 	#define MY_DEVICE_TYPE			"parking-meter-v2"
+#endif
 	#define MY_DEVICE_MODEL			"K64F"
 	#define MY_DEVICE_SERIAL 		"0123456789"
 	#define MY_FIRMWARE_VERSION		"2.0.0"
 	#define MY_HARDWARE_VERSION		"2.0.0"
 	#define MY_SOFTWARE_VERSION		"2.0.0"
+
 #else
 	// CUSTOMIZE ME: Define the core Device Types, Firmware, Hardware, Software information
 	#define ENABLE_DEVICE_MANAGER	false				// true - enable, false - disable
@@ -96,11 +101,13 @@ BeaconSwitchResource beacon_switch(&logger,"200","1");
 extern "C" void init_lcd_and_leds();
 
 // V2 Resources
-#if ENABLE_V2_RESOURCES
+#if ENABLE_V2_CAMERA
 	// V2: Camera
 	#include "mbed-endpoint-resources/CameraResource.h"
 	CameraResource camera(&logger,"300","1",true,&authenticator);
-	
+#endif
+
+#if ENABLE_V2_OCCUPANCY_DETECTOR
 	// V2: ParkingStallOccupancyDetectorResource
 	#include "mbed-endpoint-resources/ParkingStallOccupancyDetectorResource.h"
 	ParkingStallOccupancyDetectorResource occupancy_detector(&logger,"400","1",true);
@@ -130,8 +137,10 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
         .addResource(&beacon_switch)		
 
 // V2 Resources        
-#if ENABLE_V2_RESOURCES
+#if ENABLE_V2_CAMERA
 	.addResource(&camera,(bool)false)		// observation issued after POST operation completes...
+#endif
+#if ENABLE_V2_OCCUPANCY_DETECTOR
 	.addResource(&occupancy_detector,(bool)false)	// observation issued upon motion detection...
 #endif			
                    
