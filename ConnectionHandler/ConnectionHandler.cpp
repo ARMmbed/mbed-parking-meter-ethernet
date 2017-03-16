@@ -23,8 +23,20 @@
 // Class
 #include "ConnectionHandler.h"
 
+// logger
+#include "Logger.h"
+extern Logger logger;
+
+// versioning
+#include "version.h"
+
+#if ENABLE_V2_RESOURCES
+// LCD functions
+extern "C" void parking_meter_log_status(int line,char *status);
+#else
 // LCD functions
 extern "C" void parking_meter_log_status(char *status);
+#endif
 
 // NTP functions
 extern "C" void init_time();
@@ -46,10 +58,21 @@ ConnectionHandler::~ConnectionHandler() {
 
 // Beginning de-registration
 void ConnectionHandler::begin_object_unregistering(void * /* ep */) {
-    parking_meter_log_status((char *)"Meter: DEREGISTERED");
+#if ENABLE_V2_RESOURCES
+#else
+    parking_meter_log_status((char *)"DEREGISTERED");
+#endif
+	logger.log("parking meter is DEREGISTERED");
 }
 
 void ConnectionHandler::object_registered(void * /* ep */,void * /* security */,void * /*data */) {
-    parking_meter_log_status((char *)"Meter: REGISTERED");
+#if ENABLE_V2_RESOURCES
+#else
+    parking_meter_log_status((char *)"REGISTERED");
+#endif
+    logger.log("parking meter is REGISTERED");
+
+    // initialize time on the device
+    logger.log("Setting the current Time...");
     init_time();
 }

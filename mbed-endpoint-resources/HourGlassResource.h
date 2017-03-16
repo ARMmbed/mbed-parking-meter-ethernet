@@ -26,11 +26,19 @@
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
 
+// version
+#include "version.h"
+
 // JSON Parser
 #include "MbedJSONValue.h"
 
-// we define "a second" and match it to what the web app should expect
-#define CLOCK_SECOND    680
+#if ENABLE_V2_RESOURCES
+	// we define "a second" and match it to what the web app should expect
+	#define CLOCK_SECOND    920
+#else
+	// we define "a second" and match it to what the web app should expect
+	#define CLOCK_SECOND    680
+#endif
 
 // Number of tries for NTP
 #define NTP_NUM_TRIES   5
@@ -48,6 +56,8 @@ extern "C" void turn_beacon_off(void);
 
 // Linkage to LCD Resource (for writing updates)
 extern "C" void update_parking_meter_stats(int value, int fill_value);
+extern "C" void clear_lcd();
+extern "C" void post_parking_available_to_lcd();
 
 // Linkaage to FreeParking state
 extern "C" bool freeParkingEnabled();
@@ -76,6 +86,9 @@ extern "C" void init_time(){
         // DEBUG
         if (time_set == false) {
             pc.printf("ERROR: Unable to capture current time from NTP...Please reboot\r\n");
+        }
+        else {
+        	pc.printf("INFO: Current NTP time: %lu\r\n",time(NULL)*1000);
         }
     }
 }
@@ -121,9 +134,9 @@ public:
         
         // no Thread yet
         this->m_countdown_thread = NULL;
-        
-        // EXPIRED
-        update_parking_meter_stats(__seconds,__fill_seconds);
+
+        // initialize the default state
+        this->init();
     }
 
     /**
@@ -307,6 +320,12 @@ public:
         __expired = false;
     }
     
+    // init the parking state
+    void init() {
+    	// EXPIRED
+    	update_parking_meter_stats(__seconds,__fill_seconds);
+    }
+
 private:
     /**
     Sync time with web app time
@@ -314,6 +333,9 @@ private:
     int sync_with_web_app_time(char *webapp_timestamp) {
         time_t web_app_seconds_since_epoch = 0;
         
+        // DEBUG
+        this->logger()->log("HourGlassResource: web timestamp: %s",webapp_timestamp);
+
         // read in the timestamp
         sscanf(webapp_timestamp,"%lu",&web_app_seconds_since_epoch);
                 
@@ -322,12 +344,24 @@ private:
         
         // difference in time
         time_t diff = (time_t)((our_seconds_since_epoch - web_app_seconds_since_epoch)/1000);
+
+        // DEBUG
+        this->logger()->log("HourGlassResource: device: %lu web: %lu diff: %d",our_seconds_since_epoch,web_app_seconds_since_epoch,diff);
+
+        // check the difference
         if (diff == 0 || diff > MAX_TIME_SKEW) {
             // set the diff to the max allowed
             diff = (time_t)MAX_TIME_SKEW;
             
             // DEBUG
             this->logger()->log("HourGlassResource: sync_with_web_app_time: difference exceeded. set to %d seconds",MAX_TIME_SKEW);
+        }
+        else if (diff < 0 && diff < -MAX_TIME_SKEW) {
+        	// negative.. so just set to zero
+			diff = (time_t)0;
+
+			// DEBUG
+			this->logger()->log("HourGlassResource: sync_with_web_app_time: negative difference. set to 0 secs");
         }
         
         // return the difference
@@ -355,10 +389,19 @@ private:
                 
                 // turn off the beacon - we are now counting down... so no more advertisements...
                 turn_beacon_off();
+
+                // clear the screen
+                clear_lcd();
             
                 // start the decrement thread
                 this->logger()->log("HourGlassResource: start_countdown() authenticated. Starting decrement thread...");
-                this->m_countdown_thread = new Thread(_decrementor);
+                this->m_countdown_thread = new Thread();
+                if (this->m_countdown_thread != NULL) {
+                	this->m_countdown_thread->start(callback(_decrementor,(const void *)NULL));
+                }
+                else {
+                	this->logger()->log("HourGlassResource: unable to allocate countdown thread! Aborting...");
+                }
             }
             else {
                 // already running the decrement thread
@@ -405,6 +448,9 @@ void _decrementor(const void *args) {
         
         // enable the beacon
         turn_beacon_on();
+
+        // set the LCD
+        post_parking_available_to_lcd();
     }
 }
 

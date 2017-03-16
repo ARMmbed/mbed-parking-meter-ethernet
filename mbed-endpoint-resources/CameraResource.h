@@ -150,7 +150,13 @@ public:
             if (USE_THREADING && this->m_observer == NULL) {
             	// launch a thread that will invoke process_observations()...
             	this->logger()->log("CameraResource: Starting observation processing thread...");
-            	this->m_observer = new Thread(_process_observations,NULL,osPriorityNormal,DEFAULT_STACK_SIZE);
+            	this->m_observer = new Thread();
+            	if (this->m_observer != NULL) {
+            		this->m_observer->start(callback(_process_observations,(const void *)NULL));
+            	}
+            	else {
+            		this->logger()->log("CameraResource: unable to allocate Thread. Aborting...");
+            	}
             }
             else if (this->m_observer == NULL) {
             	// call directly...

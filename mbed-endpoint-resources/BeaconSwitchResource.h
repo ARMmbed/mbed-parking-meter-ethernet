@@ -27,7 +27,11 @@
 #include "mbed-connector-interface/DynamicResource.h"
 
 // our Digital out, tied to the reset line of the Cordio Beetle...
+#if ENABLE_V2_RESOURCES
+DigitalOut  __switch(D8);
+#else
 DigitalOut  __switch(D3);
+#endif
 
 // LED for confirmation
 DigitalOut  __led(LED3);
@@ -38,6 +42,13 @@ static bool free_parking = false;
 // Linkage to LCD Resource (for writing updates)
 extern "C" void parking_meter_beacon_status(int status);
 
+#if ENABLE_V2_RESOURCES
+extern "C" void parking_status_led_yellow(bool on);
+extern "C" void parking_status_led_red(bool on);
+extern "C" void parking_status_led_green(bool on);
+extern "C" void parking_status_led_blue(bool on);
+#endif
+
 // possible switch states
 #define OFF             "0"     // Go HIGH... --> turn BLE OFF
 #define ON              "1"     // Go LOW... --> turn BLE ON
@@ -45,11 +56,21 @@ extern "C" void parking_meter_beacon_status(int status);
 
 // external hooks for turning the beacon on and off
 extern "C" void turn_beacon_on(void) {
+#if ENABLE_V2_RESOURCES
+	__switch = 1;
+	parking_status_led_blue(true);
+#else
     __switch = 0;
+#endif
     __led = 0;
 }
 extern "C" void turn_beacon_off(void) {
+#if ENABLE_V2_RESOURCES
+	__switch = 0;
+	parking_status_led_blue(false);
+#else
     __switch = 1;
+#endif
     __led = 1;
 }
 

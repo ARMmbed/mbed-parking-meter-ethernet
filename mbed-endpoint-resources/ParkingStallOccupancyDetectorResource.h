@@ -20,8 +20,8 @@
  * limitations under the License.
  */
 
-#ifndef __RANGE_FINDER_RESOURCE_H__
-#define __RANGE_FINDER_RESOURCE_H__
+#ifndef __PARKING_STALL_OCCUPANCY_DETECTOR_RESOURCE_H__
+#define __PARKING_STALL_OCCUPANCY_DETECTOR_RESOURCE_H__
 
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
@@ -169,7 +169,13 @@ public:
         // we have to wait until the main loop starts in the endpoint before we create our thread... 
         if (this->m_parking_stall_state_transitioner == NULL) {
             // create the processing thread
-            this->m_parking_stall_state_transitioner = new Thread(_update_parking_stall_state,NULL,osPriorityNormal,DEFAULT_STACK_SIZE);
+            this->m_parking_stall_state_transitioner = new Thread();
+            if (this->m_parking_stall_state_transitioner != NULL) {
+            	this->m_parking_stall_state_transitioner->start(callback(_update_parking_stall_state,(const void *)NULL));
+            }
+            else {
+            	this->logger()->log("ParkingStallOccupancyDetectorResource: unable to allocate Thread. Aborting...");
+            }
         }
         
         // return our latest range status
@@ -542,4 +548,4 @@ extern "C" void reset_observation_latch()  {
 }
 
 
-#endif // __RANGE_FINDER_RESOURCE_H__
+#endif // __PARKING_STALL_OCCUPANCY_DETECTOR_RESOURCE_H__

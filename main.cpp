@@ -20,8 +20,8 @@
  * limitations under the License.
  */
 
-// Enable v2 of the endpoint
-#define ENABLE_V2_RESOURCES		    false
+// versioning info
+#include "version.h"
 
 // V2 Resources
 #if ENABLE_V2_RESOURCES
@@ -92,15 +92,18 @@ HourGlassResource hourglass(&logger,"100","1",true);
 #include "mbed-endpoint-resources/BeaconSwitchResource.h"
 BeaconSwitchResource beacon_switch(&logger,"200","1");
 
+// Initialize the LED and LCD
+extern "C" void init_lcd_and_leds();
+
 // V2 Resources
 #if ENABLE_V2_RESOURCES
 	// V2: Camera
 	#include "mbed-endpoint-resources/CameraResource.h"
-	CameraResource camera(&logger,"300","1",true,&authenticator);	// observation made when POST is issued to take a new picture...
+	CameraResource camera(&logger,"300","1",true,&authenticator);
 	
 	// V2: ParkingStallOccupancyDetectorResource
 	#include "mbed-endpoint-resources/ParkingStallOccupancyDetectorResource.h"
-	ParkingStallOccupancyDetectorResource occupancy_detector(&logger,"400","1",true);	// parking stall occupancy detector
+	ParkingStallOccupancyDetectorResource occupancy_detector(&logger,"400","1",true);
 #endif // ENABLE_V2_RESOURCES
 
 // called from the Endpoint::start() below to create resources and the endpoint internals...
@@ -128,8 +131,8 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
 
 // V2 Resources        
 #if ENABLE_V2_RESOURCES
-		.addResource(&camera,(bool)false)				// observation issued after POST operation completes...
-		.addResource(&occupancy_detector,(bool)false)	// observation issued upon motion detection...
+	.addResource(&camera,(bool)false)		// observation issued after POST operation completes...
+	.addResource(&occupancy_detector,(bool)false)	// observation issued upon motion detection...
 #endif			
                    
         // finalize the configuration...
@@ -144,9 +147,12 @@ int main()
 	
     // Announce
     logger.log("\r\n\r\nmbed Parking Meter (%s)",net_get_type());
-    
+
     // LCD Update
     write_parking_meter_title((char *)MY_FIRMWARE_VERSION);
+
+    // initialize LCD and LEDs
+    init_lcd_and_leds();
     
     // Configure Device Manager (if enabled)
     DeviceManager *device_manager = NULL;

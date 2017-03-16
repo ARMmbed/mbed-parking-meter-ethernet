@@ -29,16 +29,10 @@
 // JSON parser
 #include "MbedJSONValue.h"
 
-// String buffer for the LCD log line
-#define LCD_BUFFER_LENGTH       24
-static char __log[LCD_BUFFER_LENGTH+1];
-
-// number of slots in the time remaining bar
-#define NUM_SLOTS               20
-static char __bar[NUM_SLOTS+1];
-
 #if ENABLE_V2_RESOURCES
-// shield uses the
+// Tunables for LCD
+#define LCD_BUFFER_LENGTH       16
+#define NUM_SLOTS               11
 
 // 4 LEDs used
 DigitalOut green_led(D7);
@@ -50,15 +44,25 @@ DigitalOut red_led(D4);
 #include "SB1602E.h"
 SB1602E __lcd(D14,D15);    //  SDA, SCL
 #else
+// Tunables for LCD
+#define LCD_BUFFER_LENGTH       24
+#define NUM_SLOTS               20
+
 // Our mbed Application Shield LCD Device
 #include "C12832.h"
 static C12832 __lcd(D11, D13, D12, D7, D10);
 
 // multi-color LED (must disable when using pyOCD... D8 is the debugging line...)
 static PwmOut r (D5);
-//static PwmOut b (D8);
+static PwmOut b (D8);
 static PwmOut g (D9);
 #endif
+
+// String buffer for the LCD log line
+static char __log[LCD_BUFFER_LENGTH+1];
+
+// number of slots in the time remaining bar
+static char __bar[NUM_SLOTS+1];
 
 #if ENABLE_V2_RESOURCES
 extern Logger logger;
@@ -66,41 +70,41 @@ extern Logger logger;
 extern "C" void parking_status_led_red(bool on) {
 	if (on) {
 		//logger.log("RED LED ON");
-		//red_led = 0;
+		red_led = 1;
 	}
 	else {
 		//logger.log("RED LED OFF");
-		//red_led = 1;
+		red_led = 0;
 	}
 }
 extern "C" void parking_status_led_yellow(bool on) {
 	if (on) {
 		//logger.log("YELLOW LED ON");
-		//yellow_led = 0;
+		yellow_led = 1;
 	}
 	else {
 		//logger.log("YELLOW LED OFF");
-		//yellow_led = 1;
+		yellow_led = 0;
 	}
 }
 extern "C" void parking_status_led_green(bool on) {
 	if (on) {
 		//logger.log("GREEN LED ON");
-		//green_led = 0;
+		green_led = 1;
 	}
 	else {
 		//logger.log("GREEN LED OFF");
-		//green_led = 1;
+		green_led = 0;
 	}
 }
 extern "C" void parking_status_led_blue(bool on) {
 	if (on) {
 		//logger.log("BLUE LED ON");
-		//blue_led = 0;
+		blue_led = 1;
 	}
 	else {
 		//logger.log("BLUE LED OFF");
-		//blue_led = 1;
+		blue_led = 0;
 	}
 }
 #else
@@ -108,12 +112,12 @@ extern "C" void parking_status_led_blue(bool on) {
 extern "C" void parking_status_led_red(bool on) {
 	if (on) {
 		r = 0.5;
-		//b = 1.0;
+		b = 1.0;
 		g = 1.0;
 	}
 	else {
 		r = 1.0;
-		//b = 1.0;
+		b = 1.0;
 		g = 1.0;
 	}
 }
@@ -122,12 +126,12 @@ extern "C" void parking_status_led_red(bool on) {
 extern "C" void parking_status_led_yellow(bool on) {
 	if (on) {
 		r = 0.3;
-		//b = 1.0;
+		b = 1.0;
 		g = 0.3;
 	}
 	else {
 		r = 1.0;
-		//b = 1.0;
+		b = 1.0;
 		g = 1.0;
 	}
 }
@@ -136,12 +140,12 @@ extern "C" void parking_status_led_yellow(bool on) {
 extern "C" void parking_status_led_green(bool on) {
 	if (on) {
 		r = 1.0;
-		//b = 1.0;
+		b = 1.0;
 		g = 0.5;
 	}
 	else {
 		r = 1.0;
-		//b = 1.0;
+		b = 1.0;
 		g = 1.0;
 	}
 }
@@ -150,16 +154,64 @@ extern "C" void parking_status_led_green(bool on) {
 extern "C" void parking_status_led_blue(bool on) {
     if (on) {
 		r = 1.0;
-		//b = 0.5;
+		b = 0.5;
 		g = 1.0;
     }
     else {
     	r = 1.0;
-		//b = 0.5;
+		b = 0.5;
 		g = 1.0;
     }
 }
 #endif // ENABLE_V2_RESOURCES
+
+// parking validated
+extern "C" void parking_validated() {
+#if ENABLE_V2_RESOURCES
+	parking_status_led_yellow(false);
+	parking_status_led_red(false);
+	parking_status_led_green(true);
+	parking_status_led_blue(false);
+#else
+	parking_status_led_green(true);
+#endif
+}
+
+// parking about to expire
+extern "C" void parking_about_to_expire() {
+#if ENABLE_V2_RESOURCES
+	parking_status_led_yellow(true);
+	parking_status_led_red(false);
+	parking_status_led_green(false);
+	parking_status_led_blue(false);
+#else
+	parking_status_led_yellow(true);
+#endif
+}
+
+// parking expired
+extern "C" void parking_expired() {
+#if ENABLE_V2_RESOURCES
+	parking_status_led_yellow(false);
+	parking_status_led_red(true);
+	parking_status_led_green(false);
+	parking_status_led_blue(false);
+#else
+	parking_status_led_red(true);
+#endif
+}
+
+// parking slot available
+extern "C" void parking_available() {
+#if ENABLE_V2_RESOURCES
+	parking_status_led_yellow(false);
+	parking_status_led_red(false);
+	parking_status_led_green(false);
+	parking_status_led_blue(true);
+#else
+	parking_status_led_blue(true);
+#endif
+}
 
 // initialize the log buffer
 extern "C" void init_log_buffer() 
@@ -168,38 +220,65 @@ extern "C" void init_log_buffer()
 	 for(int i=0;i<LCD_BUFFER_LENGTH;++i) __log[i] = ' ';
 }
 
+// clear the LCD
+extern "C" void clear_lcd() {
+	__lcd.clear();
+}
+
+// re-advertise availablility
+extern "C" void post_parking_available_to_lcd() {
+#if ENABLE_V2_RESOURCES
+	// wait a second
+	Thread::wait(1000);
+	__lcd.clear();
+	__lcd.printf(0,(char *)"Parking Meter v2");
+	__lcd.printf(1,(char *)"Pay to PARK");
+#endif
+}
+
 // write to the status log line...
-extern "C" void parking_meter_log_status(char *status) 
+#if ENABLE_V2_RESOURCES
+extern "C" void parking_meter_log_status(int line,char *status)
 {
     if (status != NULL && strlen(status) > 0) {
         int length = strlen(status);
         if (length > LCD_BUFFER_LENGTH) {
             length = LCD_BUFFER_LENGTH;
         }
-       init_log_buffer();
-       for(int i=0;i<length;++i) __log[i] = status[i];
-#if ENABLE_V2_RESOURCES
-        __lcd.puts(1,(char *)__log);
-#else
-        __lcd.locate(0,20);
-        __lcd.printf(__log);
-#endif
+        memset(__log,0,LCD_BUFFER_LENGTH+1);
+        for(int i=0;i<length;++i) __log[i] = status[i];
+        __lcd.printf(line,(char *)__log);
     }
 }
+#else
+extern "C" void parking_meter_log_status(char *status)
+{
+    if (status != NULL && strlen(status) > 0) {
+        int length = strlen(status);
+        if (length > LCD_BUFFER_LENGTH) {
+            length = LCD_BUFFER_LENGTH;
+        }
+        memset(__log,0,LCD_BUFFER_LENGTH+1);
+        init_log_buffer();
+        for(int i=0;i<length;++i) __log[i] = status[i];
+        __lcd.locate(0,20);
+        __lcd.printf(__log);
+    }
+}
+#endif
 
 // Parking Meter Title
 extern "C" void write_parking_meter_title(char *fw)
 {
 #if ENABLE_V2_RESOURCES
+	__lcd.contrast(0x30);
 	__lcd.clear();
-	char buf[96];
-	memset(buf,0,96);
-	sprintf(buf,"Parking Meter FW_v%s\r",fw);
-	__lcd.puts(0,(char *)buf);
+	__lcd.printf(0,(char *)"Parking Meter v2");
+	__lcd.printf(1,(char *)"Pay to PARK");
 #else
     //__lcd.cls();
     __lcd.locate(0,0);
-    __lcd.printf("Parking Meter FW_v%s",fw);
+    __lcd.printf((char *)"Parking Meter v%s",fw);
 #endif
 }
 
@@ -230,7 +309,33 @@ extern "C" char *calculate_time_remaining_bar(int value,int fill_value)
 extern "C" void update_parking_meter_stats(int value,int fill_value)
 {
 #if ENABLE_V2_RESOURCES
-	// XXX TO DO
+	if (value <= 0) {
+	        // parking time expired
+	        //__lcd.printf(1,(char *)"Time: EXPIRED");
+			__lcd.clear();
+			__lcd.printf(0,(char *)"Time: EXPIRED");
+	        parking_meter_log_status(1,(char *)"Rem: NONE");
+
+	        // LED goes red
+	        parking_expired();
+	    }
+	    else {
+	        // remaining time
+	        __lcd.printf(0,(char *)"Time: %s\r",calculate_time_remaining_bar(value,fill_value));
+
+	        // use the log line too... just give the stats...
+	        __lcd.printf(1,"Rem: %d/%d secs\r",value,fill_value);
+
+	        // if the remaining time is less than 25% of the total, color the led YELLOW
+	        if (calculate_percent_remaining(value,fill_value) <= 25.0) {
+	            // running out of time!... maybe send a SMS...
+	            parking_about_to_expire();
+	        }
+	        else {
+	            // parking time remaining is OK...
+	            parking_validated();
+	        }
+	    }
 #else
     __lcd.locate(0,10);
     if (value <= 0) {
@@ -239,7 +344,7 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
         parking_meter_log_status((char *)"Remain: NONE            ");
         
         // LED goes red
-        parking_status_led_red(true);
+        parking_expired();
     }
     else {
         // remaining time
@@ -254,11 +359,11 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
         // if the remaining time is less than 25% of the total, color the led YELLOW
         if (calculate_percent_remaining(value,fill_value) <= 25.0) {
             // running out of time!... maybe send a SMS...
-            parking_status_led_yellow(true);
+        	parking_about_to_expire();
         }
         else {
             // parking time remaining is OK...
-            parking_status_led_green(true);
+        	parking_validated();
         }
     }
 #endif
@@ -267,6 +372,28 @@ extern "C" void update_parking_meter_stats(int value,int fill_value)
 // Parking Meter Beacon Status
 extern "C" void parking_meter_beacon_status(int status) 
 {
+#if ENABLE_V2_RESOURCES
+	if (status == 0) {
+		__lcd.clear();
+	    parking_meter_log_status(0,(char *)"FREE PARKING");
+	    parking_meter_log_status(1,(char *)"            ");
+	    parking_validated();
+	}
+	else if (status == 2) {
+		__lcd.clear();
+		parking_meter_log_status(0,(char *)"BEACON-OFF");
+		parking_meter_log_status(1,(char *)"PAID-FOR PARKING");
+		parking_status_led_blue(false);
+		parking_status_led_green(false);
+	}
+	else if (status == 1) {
+		__lcd.clear();
+		parking_meter_log_status(0,(char *)"PAID-FOR PARKING");
+		parking_meter_log_status(1,(char *)"                ");
+		parking_status_led_green(false);
+		parking_status_led_blue(true);
+	}
+#else
     if (status == 0) {
         parking_meter_log_status((char *)"FREE PARKING");
     }
@@ -276,6 +403,26 @@ extern "C" void parking_meter_beacon_status(int status)
     else if (status == 1) {
         parking_meter_log_status((char *)"PAID-FOR PARKING");
     }
+#endif
+}
+
+// V2: Initialize LCD and LEDs
+extern "C" void init_lcd_and_leds()  {
+#if ENABLE_V2_RESOURCES
+	   parking_status_led_red(true);
+	   Thread::wait(175);
+	   parking_status_led_red(false);
+       parking_status_led_yellow(true);
+       Thread::wait(175);
+       parking_status_led_yellow(false);
+       parking_status_led_blue(true);
+       Thread::wait(175);
+       parking_status_led_blue(false);
+	   parking_status_led_green(true);
+	   Thread::wait(175);
+	   parking_status_led_green(false);
+	   parking_status_led_blue(true);
+#endif
 }
 
 /** LCDResource class
@@ -293,9 +440,6 @@ public:
     */
     LCDResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"LCD",M2MBase::GET_PUT_ALLOWED,observable) {
        init_log_buffer();
-#if ENABLE_V2_RESOURCES
-       __lcd.contrast(0x35);
-#endif
     }
 
     /**
@@ -323,14 +467,18 @@ public:
     	// act on the command
     	if (cmd.compare(string("lcd")) == 0) {
     		// write to the LCD
-    		//this->logger()->log("PUT(%s) called",val.c_str());
+    		this->logger()->log("PUT(%s) called",val.c_str());
+#if ENABLE_V2_RESOURCES
+    		parking_meter_log_status(1,(char *)val.c_str());
+#else
     		parking_meter_log_status((char *)val.c_str());
+#endif
     	}
     	if (cmd.compare(string("led")) == 0) {
     		// get the state value
     		int state = parsed["state"].get<int>();
     		bool bool_state = false;
-    		if (state) bool_state = true;
+    		if (state != 0) bool_state = true;
 
     		// toggle based on state
 			if (val.compare(string("red")) == 0) {
