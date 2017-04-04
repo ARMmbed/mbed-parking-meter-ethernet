@@ -330,37 +330,37 @@ private:
     Sync time with web app time
     **/
     int sync_with_web_app_time(char *webapp_timestamp) {
-        time_t web_app_seconds_since_epoch = 0;
+        uint32_t web_app_sec_since_epoch = 0;
         
         // DEBUG
         this->logger()->log("HourGlassResource: web timestamp: %s",webapp_timestamp);
 
         // read in the timestamp
-        sscanf(webapp_timestamp,"%lu",&web_app_seconds_since_epoch);
+	char buf[64];
+	memset(buf,0,64);
+	memcpy(buf,webapp_timestamp,strlen(webapp_timestamp)-3); // remove last three zeros... convert to secs
+        sscanf(buf,"%lu",&web_app_sec_since_epoch);
 
-	// web app gives it in ms since epoch... so convert to seconds...
-	web_app_seconds_since_epoch = (time_t)(web_app_seconds_since_epoch/1000);
-                
         // endpoint time (NOW)
         time_t our_seconds_since_epoch = time(NULL);
         
         // difference in time
-        time_t diff = (time_t)(our_seconds_since_epoch - web_app_seconds_since_epoch);
+        uint32_t diff = (time_t)(our_seconds_since_epoch - web_app_sec_since_epoch);
 
         // DEBUG
-        this->logger()->log("HourGlassResource: device: %lu web: %lu diff: %d",our_seconds_since_epoch,web_app_seconds_since_epoch,diff);
+        this->logger()->log("HourGlassResource: device: %lu web: %lu diff: %d (secs)",our_seconds_since_epoch,web_app_sec_since_epoch,diff);
 
         // check the difference
         if (diff == 0 || diff > MAX_TIME_SKEW) {
             // set the diff to the max allowed
-            diff = (time_t)MAX_TIME_SKEW;
+            diff = (uint32_t)MAX_TIME_SKEW;
             
             // DEBUG
-            this->logger()->log("HourGlassResource: sync_with_web_app_time: difference exceeded. set to %d seconds",MAX_TIME_SKEW);
+            this->logger()->log("HourGlassResource: sync_with_web_app_time: difference exceeded. set to %d secs",MAX_TIME_SKEW);
         }
         else if (diff < 0 && diff < -MAX_TIME_SKEW) {
         	// negative.. so just set to zero
-			diff = (time_t)0;
+			diff = (uint32_t)0;
 
 			// DEBUG
 			this->logger()->log("HourGlassResource: sync_with_web_app_time: negative difference. set to 0 secs");
