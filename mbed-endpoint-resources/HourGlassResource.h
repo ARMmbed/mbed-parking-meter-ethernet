@@ -87,7 +87,7 @@ extern "C" void init_time(){
             pc.printf("ERROR: Unable to capture current time from NTP...Please reboot\r\n");
         }
         else {
-        	pc.printf("INFO: Current NTP time: %lu\r\n",time(NULL)*1000);
+        	pc.printf("INFO: Current NTP time: %lu\r\n",time(NULL));
         }
     }
 }
@@ -337,12 +337,15 @@ private:
 
         // read in the timestamp
         sscanf(webapp_timestamp,"%lu",&web_app_seconds_since_epoch);
+
+	// web app gives it in ms since epoch... so convert to seconds...
+	web_app_seconds_since_epoch = (time_t)(web_app_seconds_since_epoch/1000);
                 
         // endpoint time (NOW)
-        time_t our_seconds_since_epoch = time(NULL) * 1000;
+        time_t our_seconds_since_epoch = time(NULL);
         
         // difference in time
-        time_t diff = (time_t)((our_seconds_since_epoch - web_app_seconds_since_epoch)/1000);
+        time_t diff = (time_t)(our_seconds_since_epoch - web_app_seconds_since_epoch);
 
         // DEBUG
         this->logger()->log("HourGlassResource: device: %lu web: %lu diff: %d",our_seconds_since_epoch,web_app_seconds_since_epoch,diff);
