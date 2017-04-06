@@ -29,7 +29,7 @@
 // JSON parser
 #include "MbedJSONValue.h"
 
-// hook for turning the beacon on/off
+// linkage for turning the beacon on/off
 extern "C" void turn_beacon_on(void);
 extern "C" void turn_beacon_off(void);
 
@@ -386,23 +386,21 @@ extern "C" void parking_meter_beacon_status(int status)
 #if ENABLE_V2_RESOURCES
 	if (status == 0) {
 		__lcd.clear();
-	    parking_meter_log_status(0,(char *)"FREE PARKING");
-	    parking_meter_log_status(1,(char *)"            ");
+	    parking_meter_log_status(0,(char *)"Parking Meter v2");
+	    parking_meter_log_status(1,(char *)"FREE PARKING");
 	    parking_validated();
 	}
 	else if (status == 2) {
 		__lcd.clear();
-		parking_meter_log_status(0,(char *)"BEACON-OFF");
-		parking_meter_log_status(1,(char *)"PAID-FOR PARKING");
-		parking_status_led_blue(false);
-		parking_status_led_green(false);
+		parking_meter_log_status(0,(char *)"Parking Meter v2");
+		parking_meter_log_status(1,(char *)"Pay to PARK");
+		parking_available();
 	}
 	else if (status == 1) {
 		__lcd.clear();
-		parking_meter_log_status(0,(char *)"PAID-FOR PARKING");
-		parking_meter_log_status(1,(char *)"                ");
-		parking_status_led_green(false);
-		parking_status_led_blue(true);
+		parking_meter_log_status(0,(char *)"Parking Meter v2");
+		parking_meter_log_status(1,(char *)"Pay to PARK");
+		parking_available();
 	}
 #else
     if (status == 0) {
@@ -433,6 +431,8 @@ extern "C" void init_lcd_and_leds()  {
 	   Thread::wait(175);
 	   parking_status_led_green(false);
 	   parking_status_led_blue(true);
+	   Thread::wait(175);
+	   parking_available();
 #endif
 }
 

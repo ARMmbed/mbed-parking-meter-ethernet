@@ -23,6 +23,9 @@
 #ifndef __BEACON_SWITCH_RESOURCE_H__
 #define __BEACON_SWITCH_RESOURCE_H__
 
+// version info
+#include "version.h"
+
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
 
@@ -36,47 +39,18 @@ DigitalOut  __switch(D3);
 // LED for confirmation
 DigitalOut  __led(LED3);
 
-// free parking state
-static bool free_parking = false;
-
-// Linkage to LCD Resource (for writing updates)
-extern "C" void parking_meter_beacon_status(int status);
-
-#if ENABLE_V2_RESOURCES
-extern "C" void parking_status_led_yellow(bool on);
-extern "C" void parking_status_led_red(bool on);
-extern "C" void parking_status_led_green(bool on);
-extern "C" void parking_status_led_blue(bool on);
-#endif
-
 // possible switch states
 #define OFF             "0"     // Go HIGH... --> turn BLE OFF
 #define ON              "1"     // Go LOW... --> turn BLE ON
-#define NO_BEACON       "2"     // Go HIGH... --> turn BLE OFF
 
 // external hooks for turning the beacon on and off
 extern "C" void turn_beacon_on(void) {
-#if ENABLE_V2_RESOURCES
-	__switch = 1;
-	parking_status_led_blue(true);
-#else
-    __switch = 0;
-#endif
+    __switch = 1;
     __led = 0;
 }
 extern "C" void turn_beacon_off(void) {
-#if ENABLE_V2_RESOURCES
-	__switch = 0;
-	parking_status_led_blue(false);
-#else
-    __switch = 1;
-#endif
+    __switch = 0;
     __led = 1;
-}
-
-// Free parking state
-extern "C" bool freeParkingEnabled() {
-    return free_parking;
 }
 
 /** BeaconSwitchResource class
@@ -93,9 +67,13 @@ public:
     @param observable input the resource is Observable (default: FALSE)
     */
     BeaconSwitchResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"BeaconSwitch",M2MBase::GET_PUT_ALLOWED,observable) {
-        // default is ON
+#if ENABLE_V2_OCCUPANCY_DETECTOR
+    	// default is OFF
+    	turn_beacon_off();
+#else
+    	// default is ON
         turn_beacon_on();
-        parking_meter_beacon_status(true);
+#endif
     }
 
     /**
@@ -114,22 +92,10 @@ public:
     */
     virtual void put(const string value) {
         if (value.compare(string(OFF)) == 0) {
-            // FREE PARKING
-            turn_beacon_off();
-            free_parking = true;
-            parking_meter_beacon_status(0);
-        }
-        else if (value.compare(string(NO_BEACON)) == 0) {
-            // NO BEACON (PAID-FOR) PARKING
-            turn_beacon_off();
-            free_parking = false;
-            parking_meter_beacon_status(2);
+        	turn_beacon_off();
         }
         else {
-            // PAID-FOR PARKING
             turn_beacon_on();
-            free_parking = false;
-            parking_meter_beacon_status(1);
         }
     }
 };

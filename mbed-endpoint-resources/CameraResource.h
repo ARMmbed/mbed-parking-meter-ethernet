@@ -23,6 +23,9 @@
 #ifndef __CAMERA_RESOURCE_H__
 #define __CAMERA_RESOURCE_H__
 
+// version info
+#include "version.h"
+
 // Base class
 #include "mbed-connector-interface/DynamicResource.h"
 

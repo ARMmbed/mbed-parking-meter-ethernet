@@ -97,6 +97,10 @@ HourGlassResource hourglass(&logger,"100","1",true);
 #include "mbed-endpoint-resources/BeaconSwitchResource.h"
 BeaconSwitchResource beacon_switch(&logger,"200","1");
 
+// configuration resource
+#include "mbed-endpoint-resources/ParkingMeterConfigurationResource.h"
+ParkingMeterConfigurationResource config_resource(&logger,"201","1");
+
 // Initialize the LED and LCD
 extern "C" void init_lcd_and_leds();
 
@@ -133,6 +137,7 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
                    
         // Add my specific physical dynamic resources...
         .addResource(&lcd)
+		.addResource(&config_resource)
         .addResource(&hourglass,(bool)false) 			// on-demand observations...
         .addResource(&beacon_switch)		
 
@@ -151,6 +156,9 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
 // main entry point...
 int main()
 {
+	// reference to the time initializer...
+	extern "C" void init_time(void);
+
     // set Serial
     pc.baud(115200);
 	
@@ -182,6 +190,9 @@ int main()
     // we have to plumb our network first
     Connector::Endpoint::plumbNetwork((void *)device_manager);
     
+    // initialize time for the endpoint
+    init_time();
+
     // Set our ConnectionHandler instance (after plumbing the network...)
     if (ENABLE_CONNECTION_HANDLER) {
     	Connector::Endpoint::setConnectionStatusInterface(new ConnectionHandler());

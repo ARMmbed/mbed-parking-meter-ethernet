@@ -415,16 +415,15 @@ private:
 				this->m_state = STALL_EMPTY;
 				this->m_movement = NO_MOVEMENT;
 				this->m_parking_stall_state_str = this->create_status_string(this->m_state);
-				this->led_stall_empty();
 
 				// enable observation
 				this->enable_observation();
 
-				// slot is now EMPTY
-				this->led_stall_empty();
-
 				// turn the BLE beacon off
 				turn_beacon_off();
+
+				// slot is now EMPTY
+				this->led_stall_empty();
 
 				// back to low-rez pinging
 				this->m_wait_time = WAIT_TIME;

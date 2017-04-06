@@ -6,8 +6,8 @@
 
 // Enable CAMERA
 #if ENABLE_V2_RESOURCES
-	#define ENABLE_V2_CAMERA			  false
-	#define ENABLE_V2_OCCUPANCY_DETECTOR              false
+	#define ENABLE_V2_CAMERA			  true
+	#define ENABLE_V2_OCCUPANCY_DETECTOR  true
 	#define ENABLE_V2_COMPAT			  true
 #endif
 

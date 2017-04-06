@@ -38,9 +38,6 @@ extern "C" void parking_meter_log_status(int line,char *status);
 extern "C" void parking_meter_log_status(char *status);
 #endif
 
-// NTP functions
-extern "C" void init_time();
-
 // Forward declarations of public functions in mbedEndpointNetwork
 #include "mbed-connector-interface/mbedEndpointNetworkImpl.h"
 
@@ -71,8 +68,4 @@ void ConnectionHandler::object_registered(void * /* ep */,void * /* security */,
     parking_meter_log_status((char *)"REGISTERED");
 #endif
     logger.log("parking meter is REGISTERED");
-
-    // initialize time on the device
-    logger.log("Setting the current Time...");
-    init_time();
 }
