@@ -1,11 +1,14 @@
 // includes
 #include "time_utils.h"
 
+// Serial suppot
+extern Serial pc;
+
 // establish Time
 static NTPClient *ntp = NULL;
 
 // initialize our time
-extern "C" void init_time(){
+extern "C" void init_time(void){
     extern NetworkInterface *__network_interface;
     bool time_set = false;
     if (ntp == NULL) {
@@ -26,7 +29,7 @@ extern "C" void init_time(){
             pc.printf("ERROR: Unable to capture current time from NTP...Please reboot\r\n");
         }
         else {
-        	pc.printf("INFO: Current NTP time: %lu\r\n",time(NULL));
+            pc.printf("INFO: Current NTP time: %lu\r\n",time(NULL));
         }
     }
 }

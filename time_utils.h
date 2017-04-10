@@ -7,7 +7,10 @@
 // NTP library support
 #include "ntp-client/NTPClient.h"
 
+// number of times we need to try to get the time
+#define NTP_NUM_TRIES	5
+
 // initialize time for the endpoint
-extern "C" init_time(void);
+extern "C" void init_time(void);
 
 #endif // __TIME_UTILS_H__

@@ -44,7 +44,7 @@
 #endif
 
 // MAX time SKEW allowed
-#define MAX_TIME_SKEW	5
+#define MAX_TIME_SKEW	10
 
 // forward declarations
 static void *__instance = NULL;
