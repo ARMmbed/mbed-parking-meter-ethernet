@@ -137,7 +137,7 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
                    
         // Add my specific physical dynamic resources...
         .addResource(&lcd)
-		.addResource(&config_resource)
+	//.addResource(&config_resource)
         .addResource(&hourglass,(bool)false) 			// on-demand observations...
         .addResource(&beacon_switch)		
 
@@ -153,12 +153,12 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
         .build();
 }
 
+// reference to the time initializer...
+extern "C" void init_time(void);
+
 // main entry point...
 int main()
 {
-	// reference to the time initializer...
-	extern "C" void init_time(void);
-
     // set Serial
     pc.baud(115200);
 	

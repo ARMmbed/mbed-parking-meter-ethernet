@@ -37,7 +37,7 @@
 
 #if ENABLE_V2_RESOURCES
 	// we define "a second" and match it to what the web app should expect
-	#define CLOCK_SECOND    920
+	#define CLOCK_SECOND    1025
 #else
 	// we define "a second" and match it to what the web app should expect
 	#define CLOCK_SECOND    680
@@ -103,9 +103,6 @@ public:
         
         // no Thread yet
         this->m_countdown_thread = NULL;
-
-        // initialize the default state
-        this->init();
     }
 
     /**
@@ -289,12 +286,6 @@ public:
         __expired = false;
     }
     
-    // init the parking state
-    void init() {
-    	// EXPIRED
-    	update_parking_meter_stats(__seconds,__fill_seconds);
-    }
-
 private:
     /**
     Sync time with web app time

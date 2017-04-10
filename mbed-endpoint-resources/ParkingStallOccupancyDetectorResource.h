@@ -40,19 +40,19 @@ extern "C" void turn_beacon_off(void);
 static RangeFinder __range_finder(D2, 10, 5800.0, 100000);
 
 // Our wait time between checks for range detection (in ms)
-#define WAIT_TIME                   1000    // 1 seconds between range checks
+#define WAIT_TIME                   	1000    // 1 seconds between range checks
 
 // High resolution wait time
-#define HREZ_WAIT_TIME				150		// 150ms between range checks
+#define HREZ_WAIT_TIME			150	// 150ms between range checks
 
 // Status String length
 #define STATUS_STRING_LENGTH		64
 
 // Values of our resource
-#define EMPTY_STR          			"0"     // empty
-#define OCCUPIED_STR				"1"		// object present
+#define EMPTY_STR          		"0"     // empty
+#define OCCUPIED_STR			"1"	// object present
 #define ARRIVING_STR             	"2"     // object arriving
-#define DEPARTING_STR				"3"		// object leaving
+#define DEPARTING_STR			"3"	// object leaving
 
 // CONFIG: {"min_move_rate":0.03,"occupied_range":0.12,"max_range":0.37,"occupied_variance":0.01,"range_end":0.60}
 
@@ -63,22 +63,28 @@ static RangeFinder __range_finder(D2, 10, 5800.0, 100000);
 #define DEFAULT_OCCUPIED_RANGE_M	0.12	// object with 0.12m of camera... stationary
 
 // default maximum variance for the occupied threshold (M)
-#define DEFAULT_OCCUPIED_VARIANCE_M 0.01	// +- this is considered "occupied"
+#define DEFAULT_OCCUPIED_VARIANCE_M 	0.01	// +- this is considered "occupied"
 
 // default MAX range
-#define DEFAULT_MAX_RANGE_M			0.37	// longest range (in m) we care about... beyond which we dont care...
+#define DEFAULT_MAX_RANGE_M		0.37	// longest range (in m) we care about... beyond which we dont care...
 
 // range END
-#define DEFAULT_RANGE_END_M			0.60	// < MAX_RANGE and beyond which, we set the range value to "OUT_OF_RANGE"
+#define DEFAULT_RANGE_END_M		0.60	// < MAX_RANGE and beyond which, we set the range value to "OUT_OF_RANGE"
 
 // default OUT OF RANGE value
-#define DEFAULT_OUT_OF_RANGE	    100.0	// defaulted out of range range value...
+#define DEFAULT_OUT_OF_RANGE	    	100.0	// defaulted out of range range value...
 
 // forward declarations
 static void *_instance = NULL;
 
 // observation latch: true - observation allowed, false - observation not allowed
 static bool __observation_latch = true;
+
+// parking stall state
+static int __parking_stall_state = 0;
+extern "C" int parking_stall_state(void) {
+	return __parking_stall_state;
+}
 
 // reset the observation latch forward reference
 extern "C" void reset_observation_latch();
@@ -259,29 +265,25 @@ public:
 private:
     // LED annunciations
     void led_stall_empty() {
-    	parking_status_led_red(false);
+    	parking_status_led_red(true);
     	parking_status_led_yellow(false);
     	parking_status_led_green(false);
-    	parking_status_led_blue(true);
     }
     void led_stall_arriving() {
-		parking_status_led_red(false);
-		parking_status_led_yellow(true);
-		parking_status_led_green(false);
-		parking_status_led_blue(false);
+	parking_status_led_red(false);
+	parking_status_led_yellow(true);
+	parking_status_led_green(false);
     }
     void led_stall_occupied() {
-		parking_status_led_red(true);
-		parking_status_led_yellow(false);
-		parking_status_led_green(false);
-		parking_status_led_blue(false);
-	}
+	parking_status_led_red(true);
+	parking_status_led_yellow(false);
+	parking_status_led_green(false);
+    }
     void led_stall_departing() {
-		parking_status_led_red(false);
-		parking_status_led_yellow(true);
-		parking_status_led_green(false);
-		parking_status_led_blue(false);
-	}
+	parking_status_led_red(false);
+	parking_status_led_yellow(true);
+	parking_status_led_green(false);
+    }
 
     // get the latest range value
     void get_range() {
@@ -427,6 +429,9 @@ private:
 
 				// back to low-rez pinging
 				this->m_wait_time = WAIT_TIME;
+				
+				// we are empty
+				__parking_stall_state = 0;
 			}
 
 			// we are within our allowed "parked" range
@@ -457,6 +462,9 @@ private:
 
 				// back to low-rez pinging
 				this->m_wait_time = WAIT_TIME;
+				
+				// we are occupied
+				__parking_stall_state = 1;
 			}
 
 			// our range lies in between our parking range and our max range... so look at the object rate change
@@ -480,6 +488,9 @@ private:
 
 					// car is ARRIVING
 					this->led_stall_arriving();
+
+					// we are arriving
+					__parking_stall_state = 2;
 				}
 
 				// DEPARTING
@@ -492,6 +503,9 @@ private:
 
 					// car is DEPARTING
 					this->led_stall_departing();
+
+					// we are departing
+					__parking_stall_state = 3;
 				}
 
 				else {

@@ -45,12 +45,30 @@ DigitalOut  __led(LED3);
 
 // external hooks for turning the beacon on and off
 extern "C" void turn_beacon_on(void) {
-    __switch = 1;
+    __switch = 0;
     __led = 0;
+#if ENABLE_V2_RESOURCES
+    parking_status_led_blue(true);
+#endif
 }
 extern "C" void turn_beacon_off(void) {
-    __switch = 0;
+    __switch = 1;
     __led = 1;
+#if ENABLE_V2_RESOURCES
+    parking_status_led_blue(false);
+#endif
+}
+extern "C" bool beacon_is_on() {
+    if (__switch == 0) {
+#if ENABLE_V2_RESOURCES
+        parking_status_led_blue(true);
+#endif
+        return true;
+    }
+#if ENABLE_V2_RESOURCES
+    parking_status_led_blue(false);
+#endif
+    return false;
 }
 
 /** BeaconSwitchResource class
@@ -82,7 +100,7 @@ public:
     */
     virtual string get() {
         string result(OFF);
-        if (__switch) result = ON;
+        if (beacon_is_on()) result = ON;
         return result;
     }
 
@@ -92,10 +110,12 @@ public:
     */
     virtual void put(const string value) {
         if (value.compare(string(OFF)) == 0) {
-        	turn_beacon_off();
+            turn_beacon_off();
+	    this->logger()->log("Beacon Switch: OFF");
         }
         else {
             turn_beacon_on();
+	    this->logger()->log("Beacon Switch: ON");
         }
     }
 };

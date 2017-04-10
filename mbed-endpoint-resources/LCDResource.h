@@ -199,7 +199,7 @@ extern "C" void parking_expired() {
 	parking_status_led_yellow(false);
 	parking_status_led_red(true);
 	parking_status_led_green(false);
-	parking_status_led_blue(false);
+	// parking_status_led_blue(false);
 #else
 	parking_status_led_red(true);
 #endif
@@ -209,9 +209,9 @@ extern "C" void parking_expired() {
 extern "C" void parking_available() {
 #if ENABLE_V2_RESOURCES
 	parking_status_led_yellow(false);
-	parking_status_led_red(false);
+	parking_status_led_red(true);
 	parking_status_led_green(false);
-	parking_status_led_blue(true);
+	parking_status_led_blue(false);
 #else
 	parking_status_led_blue(true);
 #endif
@@ -229,22 +229,38 @@ extern "C" void clear_lcd() {
 	__lcd.clear();
 }
 
+#if ENABLE_V2_RESOURCES
+// linkage to the parking stall state
+extern "C" int parking_stall_state(void);
+#endif
+
 // re-advertise availablility
 extern "C" void post_parking_available_to_lcd() {
-#if ENABLE_V2_OCCUPANCY_DETECTOR
-	// occupancy detector is enabled...
+#if ENABLE_V2_RESOURCES
+	// enable the beacon if the stall is occupied already
+ 	int parking_state = parking_stall_state();	
+	if (parking_state == 1) {
+		// turn the beacon back on
+		turn_beacon_on();
+	}
 #else
-    // enable the beacon
-    turn_beacon_on();
+        // enable the beacon
+        turn_beacon_on();
 #endif
 
 #if ENABLE_V2_RESOURCES
 	// wait a second
 	Thread::wait(1000);
+
+	// update the LCD
 	__lcd.clear();
 	__lcd.printf(0,(char *)"Parking Meter v2");
 	__lcd.printf(1,(char *)"Pay to PARK");
+
 #endif
+
+	// update LEDs... we are expired. 
+	parking_expired();
 }
 
 // write to the status log line...
@@ -421,12 +437,12 @@ extern "C" void init_lcd_and_leds()  {
 	   parking_status_led_red(true);
 	   Thread::wait(175);
 	   parking_status_led_red(false);
-       parking_status_led_yellow(true);
-       Thread::wait(175);
-       parking_status_led_yellow(false);
-       parking_status_led_blue(true);
-       Thread::wait(175);
-       parking_status_led_blue(false);
+           parking_status_led_yellow(true);
+           Thread::wait(175);
+           parking_status_led_yellow(false);
+       	   parking_status_led_blue(true);
+           Thread::wait(175);
+           parking_status_led_blue(false);
 	   parking_status_led_green(true);
 	   Thread::wait(175);
 	   parking_status_led_green(false);

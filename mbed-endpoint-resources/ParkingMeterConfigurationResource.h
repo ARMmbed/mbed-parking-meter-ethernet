@@ -53,8 +53,8 @@ public:
     */
 	ParkingMeterConfigurationResource(const Logger *logger,const char *obj_name,const char *res_name,const bool observable = false) : DynamicResource(logger,obj_name,res_name,"ParkingMeterConfiguration",M2MBase::GET_PUT_ALLOWED,observable) {
 		__pkm_config = (void *)this;
-		this.m_config = DEFAULT_CONFIG;
-		this.update_config();
+		this->m_config = DEFAULT_CONFIG;
+		this->update_config();
 	}
 
     /**
@@ -62,7 +62,7 @@ public:
     @returns string containing the current JSON representation of our parking meter configuration
     */
     virtual string get() {
-    	return this.m_config;
+    	return this->m_config;
     }
 
     /**
@@ -70,21 +70,21 @@ public:
     @param string input for the parking meter configuration
     */
     virtual void put(const string value) {
-    	this.m_config = value;
+    	this->m_config = value;
     }
 
     /**
      * FreeParking enabled/disabled
      */
     bool freeParkingEnabled() {
-    	return this.m_free_parking;
+    	return this->m_free_parking;
     }
 
     /**
      * No Beacon mode enabled/disabled
      */
     bool noBeaconModeEnabled() {
-    	return this.m_no_beacon;
+    	return this->m_no_beacon;
     }
 
 private:
@@ -92,11 +92,11 @@ private:
     void update_config() {
     	// parse the JSON
 		MbedJSONValue parsed;
-		parse(parsed,this.m_config.c_str());
+		parse(parsed,this->m_config.c_str());
 
 		// pull the configuration values that are known...
-		this.m_free_parking = (bool)parsed["free_parking"].get<int>();
-		this.m_no_beacon = (bool)parsed["no_beacon"].get<int>();
+		this->m_free_parking = (bool)parsed["free_parking"].get<int>();
+		this->m_no_beacon = (bool)parsed["no_beacon"].get<int>();
     }
 
 private:
