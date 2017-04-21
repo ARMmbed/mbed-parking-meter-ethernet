@@ -229,14 +229,14 @@ extern "C" void clear_lcd() {
 	__lcd.clear();
 }
 
-#if ENABLE_V2_RESOURCES
+#if ENABLE_V2_OCCUPANCY_DETECTOR
 // linkage to the parking stall state
 extern "C" int parking_stall_state(void);
 #endif
 
 // re-advertise availablility
 extern "C" void post_parking_available_to_lcd() {
-#if ENABLE_V2_RESOURCES
+#if ENABLE_V2_OCCUPANCY_DETECTOR
 	// enable the beacon if the stall is occupied already
  	int parking_state = parking_stall_state();	
 	if (parking_state == 1) {
