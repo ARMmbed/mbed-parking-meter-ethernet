@@ -270,7 +270,7 @@ private:
     	parking_status_led_green(false);
     }
     void led_stall_arriving() {
-	parking_status_led_red(false);
+	parking_status_led_red(true);
 	parking_status_led_yellow(true);
 	parking_status_led_green(false);
     }
@@ -280,7 +280,7 @@ private:
 	parking_status_led_green(false);
     }
     void led_stall_departing() {
-	parking_status_led_red(false);
+	parking_status_led_red(true);
 	parking_status_led_yellow(true);
 	parking_status_led_green(false);
     }
