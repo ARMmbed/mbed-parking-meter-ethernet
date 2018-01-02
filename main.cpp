@@ -101,6 +101,14 @@ BeaconSwitchResource beacon_switch(&logger,"200","1");
 #include "mbed-endpoint-resources/ParkingMeterConfigurationResource.h"
 ParkingMeterConfigurationResource config_resource(&logger,"201","1");
 
+// location coords resource
+#include "mbed-endpoint-resources/LocationCoordsResource.h"
+LocationCoordsResource loc_coords(&logger,"500","1");
+
+// location metdata resource
+#include "mbed-endpoint-resources/LocationMetadataResource.h"
+LocationMetadataResource loc_metadata(&logger,"600","1",&loc_coords);
+
 // Initialize the LED and LCD
 extern "C" void init_lcd_and_leds();
 
@@ -140,6 +148,8 @@ Connector::Options *configure_endpoint(Connector::OptionsBuilder &config)
 	//.addResource(&config_resource)
         .addResource(&hourglass,(bool)false) 			// on-demand observations...
         .addResource(&beacon_switch)		
+        .addResource(&loc_metadata)
+        .addResource(&loc_coords)
 
 // V2 Resources        
 #if ENABLE_V2_CAMERA

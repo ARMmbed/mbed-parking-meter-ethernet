@@ -13,4 +13,10 @@
 // initialize time for the endpoint
 extern "C" void init_time(void);
 
+// time utils initialized?
+extern "C" bool time_utils_initialized();
+
+// get the current time from the endpoint
+extern "C" char *get_current_time(void);
+
 #endif // __TIME_UTILS_H__

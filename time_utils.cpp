@@ -1,11 +1,19 @@
 // includes
 #include "time_utils.h"
 
-// Serial suppot
+// Customizable defines
+#define TIME_FORMAT_STR         "%F,%H:%M:%S,%Z"	 
+#define DEF_TIME_STR		"1970-01-01,00:00:00,GMT"
+#define TIME_STR_BUFFER_LEN	64
+
+// Serial support
 extern Serial pc;
 
-// establish Time
+// NTP support for Time
 static NTPClient *ntp = NULL;
+
+// string buffer for displaying time
+static char time_str_buf[TIME_STR_BUFFER_LEN+1];
 
 // initialize our time
 extern "C" void init_time(void){
@@ -29,7 +37,30 @@ extern "C" void init_time(void){
             pc.printf("ERROR: Unable to capture current time from NTP...Please reboot\r\n");
         }
         else {
-            pc.printf("INFO: Current NTP time: %lu\r\n",time(NULL));
+            time_t utc_now = time(NULL);
+	    memset(time_str_buf,0,TIME_STR_BUFFER_LEN+1);
+	    strftime(time_str_buf,TIME_STR_BUFFER_LEN,TIME_FORMAT_STR,localtime(&utc_now));
+            pc.printf("INFO: Current UTC time: %s\r\n",time_str_buf);
         }
     }
+}
+
+// time utils are initialized?
+extern "C" bool time_utils_initialized() {
+   return (ntp != NULL);
+}
+
+// get the current time
+extern "C" char *get_current_time(void) {
+    memset(time_str_buf,0,TIME_STR_BUFFER_LEN+1);
+    strcpy(time_str_buf,DEF_TIME_STR);
+    if (time_utils_initialized()) {
+        // current time
+        time_t utc_now = time(NULL);
+
+        // convert to string format
+        memset(time_str_buf,0,TIME_STR_BUFFER_LEN+1);
+        strftime(time_str_buf,TIME_STR_BUFFER_LEN,TIME_FORMAT_STR,localtime(&utc_now));
+    }
+    return time_str_buf;
 }
